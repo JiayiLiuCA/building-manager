@@ -1,5 +1,5 @@
 import { CURRENT_MONTH, lastMonths } from '../../lib/date'
-import type { AppData, Bill, BillStatus, Household } from '../types'
+import type { AppData, Bill, BillStatus, FeeType, Household } from '../types'
 
 export function getBillStatus(bill: Bill): BillStatus {
   if (bill.paidAmount >= bill.amount) return 'paid'
@@ -19,6 +19,70 @@ export function getHouseholdBills(data: Pick<AppData, 'bills'>, householdId: str
   return data.bills
     .filter((b) => b.householdId === householdId)
     .sort((a, b) => b.month.localeCompare(a.month) || FEE_ORDER[a.feeType] - FEE_ORDER[b.feeType])
+}
+
+/** 月度账单状态:none = 当月该费用无账单(如空置月无水电) */
+export type MonthBillStatus = 'paid' | 'partial' | 'unpaid' | 'none'
+
+export interface MonthFeeLine {
+  feeType: FeeType
+  bill: Bill
+  outstanding: number
+}
+
+export interface MonthlyBills {
+  month: string // 'yyyy-MM'
+  billed: number
+  paid: number
+  outstanding: number
+  status: MonthBillStatus
+  /** 当月各费用类型明细,按费用类型固定顺序 */
+  lines: MonthFeeLine[]
+}
+
+/** 某户某费用类型出现过的月份是否存在(供「按费用类型筛选」按需展示标签) */
+export function getHouseholdFeeTypes(data: Pick<AppData, 'bills'>, householdId: string): FeeType[] {
+  const present = new Set(data.bills.filter((b) => b.householdId === householdId).map((b) => b.feeType))
+  return (Object.keys(FEE_ORDER) as FeeType[]).filter((ft) => present.has(ft))
+}
+
+/**
+ * 某户近 n 个月账单按月聚合(最新月在前),每月含费用类型拆分与缴费状态。
+ * 传入 feeType 时仅统计该费用类型,用于业主端「只看物业费 / 水费…」的历史视图。
+ */
+export function getHouseholdMonthlyBills(
+  data: Pick<AppData, 'bills'>,
+  householdId: string,
+  n = 12,
+  feeType?: FeeType,
+): MonthlyBills[] {
+  const byMonth = new Map<string, Bill[]>()
+  for (const b of data.bills) {
+    if (b.householdId !== householdId) continue
+    if (feeType && b.feeType !== feeType) continue
+    const arr = byMonth.get(b.month)
+    if (arr) arr.push(b)
+    else byMonth.set(b.month, [b])
+  }
+
+  return lastMonths(n)
+    .map((month): MonthlyBills => {
+      const monthBills = (byMonth.get(month) ?? []).sort((a, b) => FEE_ORDER[a.feeType] - FEE_ORDER[b.feeType])
+      const billed = monthBills.reduce((s, b) => s + b.amount, 0)
+      const paid = monthBills.reduce((s, b) => s + Math.min(b.paidAmount, b.amount), 0)
+      const outstanding = Math.max(0, billed - paid)
+      const status: MonthBillStatus =
+        monthBills.length === 0 ? 'none' : outstanding === 0 ? 'paid' : paid > 0 ? 'partial' : 'unpaid'
+      return {
+        month,
+        billed,
+        paid,
+        outstanding,
+        status,
+        lines: monthBills.map((bill) => ({ feeType: bill.feeType, bill, outstanding: billOutstanding(bill) })),
+      }
+    })
+    .reverse() // 最新月在前
 }
 
 export interface Arrears {

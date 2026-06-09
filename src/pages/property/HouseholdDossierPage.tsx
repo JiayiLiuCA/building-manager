@@ -5,6 +5,7 @@ import { toast } from 'sonner'
 import { DrillBreadcrumb } from '@/components/shared/DrillBreadcrumb'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { MoneyText } from '@/components/shared/MoneyText'
+import { PaymentHistory } from '@/components/shared/PaymentHistory'
 import { OverdueBadge } from '@/components/shared/OverdueBadge'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { StarRating } from '@/components/shared/StarRating'
@@ -28,18 +29,16 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { getArrears, getBillStatus, getHouseholdBills } from '@/data/selectors/billingSelectors'
+import { getArrears } from '@/data/selectors/billingSelectors'
 import { complaintCreatedAt, deriveComplaintStatus, getHouseholdComplaints } from '@/data/selectors/complaintSelectors'
 import { getActiveDunningForHousehold, getDunningSuggestion } from '@/data/selectors/dunningSelectors'
 import { deriveWorkOrderStatus, getHouseholdWorkOrders, reportedAt } from '@/data/selectors/workOrderSelectors'
 import { useAppStore } from '@/data/store'
-import { formatCurrency, formatDateTime, formatMonth } from '@/lib/format'
+import { formatCurrency, formatDateTime } from '@/lib/format'
 import {
-  billStatusMap,
   complaintStatusMap,
   deptMap,
   dunningSuggestionMap,
-  feeTypeMap,
   serviceTaskTypeMap,
   workOrderCategoryMap,
   workOrderStatusMap,
@@ -61,7 +60,6 @@ export function HouseholdDossierPage() {
 
   const household = state.households.find((h) => h.id === householdId)
   const arrears = useMemo(() => getArrears(state, householdId), [state, householdId])
-  const bills = useMemo(() => getHouseholdBills(state, householdId), [state, householdId])
   const workOrders = useMemo(() => getHouseholdWorkOrders(state, householdId), [state, householdId])
   const complaints = useMemo(() => getHouseholdComplaints(state, householdId), [state, householdId])
   const records = useMemo(
@@ -242,47 +240,7 @@ export function HouseholdDossierPage() {
         </TabsList>
 
         <TabsContent value="bills">
-          <Card className="py-0">
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="pl-4">月份</TableHead>
-                    <TableHead>费用类型</TableHead>
-                    <TableHead className="text-right">应缴金额</TableHead>
-                    <TableHead className="text-right">已缴金额</TableHead>
-                    <TableHead>缴费时间</TableHead>
-                    <TableHead>状态</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {bills.map((bill) => (
-                    <TableRow key={bill.id}>
-                      <TableCell className="pl-4 tabular-nums">{formatMonth(bill.month)}</TableCell>
-                      <TableCell>
-                        <span className="flex items-center gap-1.5">
-                          {feeTypeMap[bill.feeType].label}
-                          {bill.isHalfPrice && (
-                            <Badge variant="outline" className="border-zinc-300 bg-zinc-100 px-1.5 font-normal text-zinc-600">
-                              半价
-                            </Badge>
-                          )}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums">{formatCurrency(bill.amount)}</TableCell>
-                      <TableCell className="text-right tabular-nums">
-                        {bill.paidAmount > 0 ? formatCurrency(bill.paidAmount) : '—'}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{formatDateTime(bill.paidAt)}</TableCell>
-                      <TableCell>
-                        <StatusBadge meta={billStatusMap[getBillStatus(bill)]} />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+          <PaymentHistory householdId={household.id} />
         </TabsContent>
 
         <TabsContent value="workOrders">
