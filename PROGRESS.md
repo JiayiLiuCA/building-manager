@@ -14,7 +14,7 @@
 | 阶段 | 内容 | 状态 |
 |---|---|---|
 | S0 | 工作区与文档(克隆/依赖/REFACTOR_PLAN/需求入库/PROGRESS) | ✅ 完成 |
-| S1 | 契约与工具层(types/constants/statusMaps/id/period/seed 配置骨架) | ⬜ |
+| S1 | 契约与工具层(types/constants/statusMaps/id/period/seed 配置骨架) | ✅ 完成 |
 | S2 | seed 全量重写 + verify:seed 第一版 | ⬜ |
 | S3 | selectors + store 重写,verify 两脚本绿 | ⬜ |
 | S4 | 骨架(路由/守卫/两 layout/登录页),tsc 首绿 | ⬜ |
@@ -27,6 +27,14 @@
 | S11 | 收尾(smoke/README/lint/build/验收清单) | ⬜ |
 
 ## 阶段记录
+
+### S1(2026-07-05)
+
+- `types.ts` 全量重写:Role 三值、Company/Occupancy/PaymentHabit、四费类 Bill(companyId 可空=园区级)、Waiver/RevenueTarget/ValueAddedContract、工单加 kind、维保/巡检/核抄/任务(ownerUsername 权限归属)、通知/发票/调研/收款跟进;AppData 22 个切片。
+- `data/constants.ts`:费率 18 元/㎡·月、车位 300/500、SLA 48h、响应 4h、维保容差 24h。
+- `lib/statusMaps.ts` 重写(新增 getWoStatusMeta 按 kind 区分「待验收」);`lib/id.ts` 新前缀(FU/NT/IV/SR);新增 `lib/period.ts`(年/季/月期间口径唯一源,达成率只累计已有月份)。
+- `seed/constants.ts`:园区 3 区 14 栋、30 家企业显式定义(占位/面积/习惯/欠费画像)、6 账号、10 员工、增值合同 9 份、巡检模板/调研问卷制式配置、园区语境文案池、年度任务树配置、目标 k 系数。
+- 新契约层独立 tsc --strict 通过(全量 tsc 绿在 S4)。
 
 ### S0(2026-07-05)
 

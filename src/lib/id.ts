@@ -1,4 +1,4 @@
-import type { Complaint, DunningRecord, ServiceTask, WorkOrder } from '../data/types'
+import type { Complaint, FollowUpRecord, Invoice, Notice, Survey, WorkOrder } from '../data/types'
 import { DEMO_TODAY } from './date'
 
 // 运行时新建实体的 ID 生成:扫描现有数组取最大序号 +1,保证人类可读且不重复
@@ -14,12 +14,20 @@ export function nextComplaintId(existing: Complaint[]): string {
   return nextSeq(existing.map((c) => c.id), 'CP-')
 }
 
-export function nextDunningId(existing: DunningRecord[]): string {
-  return nextSeq(existing.map((d) => d.id), 'DN-')
+export function nextFollowUpId(existing: FollowUpRecord[]): string {
+  return nextSeq(existing.map((r) => r.id), 'FU-')
 }
 
-export function nextServiceTaskId(existing: ServiceTask[]): string {
-  return nextSeq(existing.map((t) => t.id), 'ST-')
+export function nextNoticeId(existing: Notice[]): string {
+  return nextSeq(existing.map((n) => n.id), 'NT-')
+}
+
+export function nextInvoiceId(existing: Invoice[]): string {
+  return nextSeq(existing.map((i) => i.id), 'IV-')
+}
+
+export function nextSurveyId(existing: Survey[]): string {
+  return nextSeq(existing.map((s) => s.id), 'SR-', 2)
 }
 
 function maxSeq(ids: string[], prefix: string): number {
@@ -30,6 +38,6 @@ function maxSeq(ids: string[], prefix: string): number {
     .reduce((a, b) => Math.max(a, b), 0)
 }
 
-function nextSeq(ids: string[], prefix: string): string {
-  return `${prefix}${String(maxSeq(ids, prefix) + 1).padStart(3, '0')}`
+function nextSeq(ids: string[], prefix: string, pad = 3): string {
+  return `${prefix}${String(maxSeq(ids, prefix) + 1).padStart(pad, '0')}`
 }
