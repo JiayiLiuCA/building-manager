@@ -1,129 +1,168 @@
-// M12 双端联动自测:直接驱动真实 Zustand store 走完六条核心演示链路
+// 双端联动自测:直接驱动真实 Zustand store 走完核心演示链路(含权限隔离与新链路)
 // 运行:npx tsx scripts/verify-flows.ts
 import { useAppStore } from '../src/data/store'
 import { getArrears } from '../src/data/selectors/billingSelectors'
 import { deriveComplaintStatus, isSupervisorInvolved } from '../src/data/selectors/complaintSelectors'
-import { getDunningSuggestion } from '../src/data/selectors/dunningSelectors'
-import { getDashboardKpis, getRiskList, getSatisfactionDist } from '../src/data/selectors/dashboardSelectors'
+import { getDashboardKpis } from '../src/data/selectors/dashboardSelectors'
+import { buildDailyReport } from '../src/data/selectors/dailyReportSelectors'
+import { getActiveFollowUpForCompany, getFollowUpSuggestion } from '../src/data/selectors/followUpSelectors'
+import { deriveNoticeStatus, getActiveNoticesForCompany } from '../src/data/selectors/noticeSelectors'
+import { getRatingDist } from '../src/data/selectors/satisfactionSelectors'
+import { getNoticeScopeOptions, getScopedData, getScopedInternal, visibleCompanyIds } from '../src/data/selectors/scope'
 import { deriveWorkOrderStatus, isWorkOrderOverdue } from '../src/data/selectors/workOrderSelectors'
-import { STORY_IDS } from '../src/data/seed/storyHouseholds'
+import { STORY_COMPANY_IDS } from '../src/data/seed/constants'
 
 let failures = 0
-function check(name: string, cond: boolean, detail?: string) {
-  if (cond) console.log(`  ✓ ${name}`)
-  else {
-    failures++
-    console.error(`  ✗ ${name}${detail ? ` — ${detail}` : ''}`)
-  }
+const check = (name: string, cond: boolean, detail = '') => {
+  console.log(`${cond ? '✓' : '✗'} ${name}${detail ? ` — ${detail}` : ''}`)
+  if (!cond) failures += 1
 }
 const s = () => useAppStore.getState()
+const scoped = () => getScopedData(s())
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
-// ===================== 链路 1:报修全闭环 =====================
-console.log('\n[1] 业主报修 → 物业接单/派单/预约/完工 → 业主签字 → 评价')
-const ratedBefore = getSatisfactionDist(s()).reduce((sum, d) => sum + d.count, 0)
-s().loginAs('zhangwei')
-const woId = s().createWorkOrder({ category: 'plumbing', description: '联动自测:阳台地漏返味' })!
-check('业主提交报修生成工单', !!woId && !!s().workOrders.find((w) => w.id === woId))
-s().loginAs('admin')
-s().acceptWorkOrder(woId)
-s().dispatchWorkOrder(woId, 'engineering', 'S-03')
-s().setAppointment(woId, '2026-06-06T15:00:00')
-s().submitCompletion(woId, '已疏通并加装防臭芯')
-check('物业四步后状态=已完成待签字', deriveWorkOrderStatus(s().workOrders.find((w) => w.id === woId)!) === 'done_pending_sign')
-s().loginAs('zhangwei')
-s().signAndCloseWorkOrder(woId)
-check('业主签字后状态=已关单(双端同一条记录)', deriveWorkOrderStatus(s().workOrders.find((w) => w.id === woId)!) === 'closed')
-s().rateWorkOrder(woId, 5, '联动自测好评')
-const ratedAfter = getSatisfactionDist(s()).reduce((sum, d) => sum + d.count, 0)
-check('评价进入驾驶舱满意度分布(+1)', ratedAfter === ratedBefore + 1, `${ratedBefore} → ${ratedAfter}`)
+const C2 = STORY_COMPANY_IDS.two // 精工精密制造
+const C3 = STORY_COMPANY_IDS.three // 洄澜餐饮管理
 
-// ===================== 链路 2:催缴 → 弹窗 → 缴费 → 收缴率联动 =====================
-console.log('\n[2] 张伟催缴弹窗 → 缴清 → 记录 resolved → 收缴率上升')
-const zhangweiActive = s().dunningRecords.find((r) => r.householdId === STORY_IDS.zhangwei && r.status === 'active')
-check('张伟存在 active 催缴记录(登录即弹窗)', !!zhangweiActive)
-const rateBefore = getDashboardKpis(s()).collectionRate
-const owing = getArrears(s(), STORY_IDS.zhangwei)
-check('张伟欠费 4 个月', owing.months === 4, `实际 ${owing.months}`)
-s().payBills(owing.bills.map((b) => b.id))
-check('缴清后欠费归零', getArrears(s(), STORY_IDS.zhangwei).amount === 0)
-check(
-  '催缴记录自动 resolved',
-  s().dunningRecords.find((r) => r.id === zhangweiActive!.id)?.status === 'resolved',
-)
-const rateAfter = getDashboardKpis(s()).collectionRate
-check('物业端收缴率实时上升', rateAfter > rateBefore, `${(rateBefore * 100).toFixed(1)}% → ${(rateAfter * 100).toFixed(1)}%`)
+async function main() {
+  // ===== 链路 1:报修全闭环 + 满意度联动(company1 → 物业 → 签字 → 评价)=====
+  console.log('\n— 链路 1:报修闭环 + 满意度联动 —')
+  s().loginAs('company1')
+  const woId = s().createWorkOrder({ category: 'hvac', description: '演示:机房空调低压告警,请求检查' })!
+  check('企业提交报修生成工单', !!woId && s().workOrders.some((w) => w.id === woId && w.kind === 'company'))
+  s().loginAs('admin')
+  s().acceptWorkOrder(woId)
+  s().dispatchWorkOrder(woId, 'engineering', 'S-06')
+  s().setAppointment(woId, '2026-06-06T15:00:00')
+  s().submitCompletion(woId, '已更换传感器,试运行正常')
+  check('物业四步后状态 = 待签字', deriveWorkOrderStatus(s().workOrders.find((w) => w.id === woId)!) === 'done_pending_sign')
+  s().loginAs('company1')
+  s().signAndCloseWorkOrder(woId)
+  check('企业签字后状态 = 已关单(双端同一条记录)', deriveWorkOrderStatus(s().workOrders.find((w) => w.id === woId)!) === 'closed')
+  const star5Before = getRatingDist(scoped()).find((d) => d.star === 5)!.count
+  s().rateWorkOrder(woId, 5, '响应很快,处理专业')
+  const star5After = getRatingDist(scoped()).find((d) => d.star === 5)!.count
+  check('评价进入满意度分布(5 星 +1)', star5After === star5Before + 1)
 
-// ===================== 链路 3:投诉升级链 =====================
-console.log('\n[3] 业主投诉(关联工单)→ 派部门 → 回复 → 主管介入 → 主管回复 → 关闭')
-const cpId = s().createComplaint({ content: '联动自测:对维修流程不满意', workOrderId: woId })!
-check('投诉创建并关联工单', s().complaints.find((c) => c.id === cpId)?.workOrderId === woId)
-s().loginAs('admin')
-s().dispatchComplaint(cpId, 'engineering')
-s().replyComplaint(cpId, '已复核维修质量,加装配件')
-check('部门回复后状态=已回复', deriveComplaintStatus(s().complaints.find((c) => c.id === cpId)!) === 'replied')
-s().loginAs('zhangwei')
-s().requestSupervisor(cpId, '回复不满意,要求主管介入')
-check('申请后状态=主管介入中', deriveComplaintStatus(s().complaints.find((c) => c.id === cpId)!) === 'supervisor')
-s().loginAs('admin')
-s().supervisorReply(cpId, '主管复核,已彻底处理并回访')
-s().loginAs('zhangwei')
-s().closeComplaint(cpId)
-const cp = s().complaints.find((c) => c.id === cpId)!
-check('投诉关闭且记录主管介入', deriveComplaintStatus(cp) === 'closed' && isSupervisorInvolved(cp))
+  // ===== 链路 2:收款跟进三色实时联动(② hold → 闭环 → collect)=====
+  console.log('\n— 链路 2:②精工 🟠→🟢 实时联动 —')
+  s().loginAs('admin')
+  check('②初始建议 = 暂缓(hold)', getFollowUpSuggestion(s(), C2) === 'hold')
+  const overdueWo = s().workOrders.find((w) => w.companyId === C2 && isWorkOrderOverdue(w))!
+  check('②存在超时未闭环工单', !!overdueWo)
+  s().submitCompletion(overdueWo.id, '漏水点已封堵,冷凝管重新保温')
+  check('完工后不再计超时', !isWorkOrderOverdue(s().workOrders.find((w) => w.id === overdueWo.id)!))
+  check('仅完工仍 = hold(投诉未闭环)', getFollowUpSuggestion(s(), C2) === 'hold')
+  const complaint = s().complaints.find((c) => c.companyId === C2 && deriveComplaintStatus(c) !== 'closed')!
+  s().replyComplaint(complaint.id, '已彻底修复并制定补偿方案,向贵司致歉')
+  s().closeComplaint(complaint.id)
+  check('闭环投诉后建议实时变 collect(🟢)', getFollowUpSuggestion(s(), C2) === 'collect')
 
-// ===================== 链路 4(核心卖点):李强 暂缓→建议 实时联动 =====================
-console.log('\n[4] 李强:解决超时工单 + 关闭投诉 → 催缴建议 🟠暂缓 实时变 🟢建议')
-check('初始建议=hold(暂缓催缴)', getDunningSuggestion(s(), STORY_IDS.liqiang) === 'hold')
-const liqiangWo = s().workOrders.find((w) => w.householdId === STORY_IDS.liqiang && isWorkOrderOverdue(w))
-check('李强存在超时工单', !!liqiangWo)
-s().loginAs('admin')
-s().setAppointment(liqiangWo!.id, '2026-06-06T14:00:00')
-s().submitCompletion(liqiangWo!.id, '已修复楼上管道渗漏并做防水')
-check('完工后不再计为超时', !isWorkOrderOverdue(s().workOrders.find((w) => w.id === liqiangWo!.id)!))
-check('仅完工仍=hold(投诉未闭环)', getDunningSuggestion(s(), STORY_IDS.liqiang) === 'hold')
-const liqiangCp = s().complaints.find((c) => c.householdId === STORY_IDS.liqiang)!
-s().replyComplaint(liqiangCp.id, '漏水已修复,后续每周回访')
-s().closeComplaint(liqiangCp.id)
-check('投诉闭环后建议实时变 collect 🟢', getDunningSuggestion(s(), STORY_IDS.liqiang) === 'collect')
+  // ===== 链路 3:发起跟进 → 企业提醒依据 → 缴费 → 自动解决 + 收缴率上升 =====
+  console.log('\n— 链路 3:③发起跟进 → 缴费闭环 —')
+  s().loginAs('cs_liu')
+  const rateBefore = getDashboardKpis(scoped()).collectionRate
+  s().startFollowUp(C3)
+  const record = getActiveFollowUpForCompany(s(), C3)
+  check('生成 active 跟进记录且快照 = collect', record?.status === 'active' && record.suggestionSnapshot === 'collect')
+  s().loginAs('company3')
+  check('企业端可见本司 active 跟进(提醒弹窗依据)', !!getActiveFollowUpForCompany(scoped(), C3))
+  const owing = getArrears(s(), C3)
+  check('③当前欠 2 个月', owing.months === 2, `${owing.amount} 元`)
+  s().payBills(owing.bills.map((b) => b.id))
+  check('缴清后欠费归零', getArrears(s(), C3).amount === 0)
+  check('跟进记录自动 resolved', getActiveFollowUpForCompany(s(), C3) == null && s().followUpRecords.some((r) => r.companyId === C3 && r.status === 'resolved'))
+  s().loginAs('cs_liu')
+  const rateAfter = getDashboardKpis(scoped()).collectionRate
+  check('刘洋收缴率实时上升', rateAfter > rateBefore, `${(rateBefore * 100).toFixed(1)}% → ${(rateAfter * 100).toFixed(1)}%`)
 
-// ===================== 链路 5:王秀兰 待核实 → 登记空置 =====================
-console.log('\n[5] 王秀兰:⚪️数据待核实 → 核实登记空置 → 账单校准 + 停水停电待办')
-check('初始建议=verify(疑似空置)', getDunningSuggestion(s(), STORY_IDS.wangxiulan) === 'verify')
-const wangArrearsBefore = getArrears(s(), STORY_IDS.wangxiulan).amount
-const tasksBefore = s().serviceTasks.length
-s().setVacancy(STORY_IDS.wangxiulan, true)
-const wang = s().households.find((h) => h.id === STORY_IDS.wangxiulan)!
-check('已登记空置且异常标记清除', wang.isVacant && wang.anomaly === null)
-const wangArrearsAfter = getArrears(s(), STORY_IDS.wangxiulan).amount
-check('未缴物业费按半价校准(欠费减半)', wangArrearsAfter === Math.round(wangArrearsBefore / 2), `${wangArrearsBefore} → ${wangArrearsAfter}`)
-const newTask = s().serviceTasks[s().serviceTasks.length - 1]
-check('生成「停水停电」待办', s().serviceTasks.length === tasksBefore + 1 && newTask.type === 'CUT_UTILITIES' && newTask.status === 'open')
-s().completeServiceTask(newTask.id)
-check('待办可标记完成', s().serviceTasks.find((t) => t.id === newTask.id)?.status === 'done')
-check('核实后建议变 collect(按半价催缴)', getDunningSuggestion(s(), STORY_IDS.wangxiulan) === 'collect')
+  // ===== 链路 4:通知发布 → 企业首页可见 → 撤销;客服发布范围受限 =====
+  console.log('\n— 链路 4:停电通知定向与撤销 —')
+  s().loginAs('admin')
+  const ntId = s().publishNotice({
+    type: 'power_outage',
+    title: '演示:B4 栋临时停电检修',
+    content: '今日 20:00-22:00 B4 栋配电检修,请提前保存数据。',
+    scope: { level: 'building', buildingId: 'B4' },
+    startAt: '2026-06-06T12:00:00',
+    endAt: '2026-06-07T23:00:00',
+  })!
+  const inB4 = s().companies.find((c) => c.buildingId === 'B4')!.id
+  check('B4 栋企业可见新通知', getActiveNoticesForCompany(s(), inB4).some((n) => n.id === ntId))
+  check('B2 栋企业(②)不受此通知影响', !getActiveNoticesForCompany(s(), C2).some((n) => n.id === ntId))
+  s().revokeNotice(ntId)
+  check('撤销后通知不再生效', deriveNoticeStatus(s().notices.find((n) => n.id === ntId)!) === 'revoked' && !getActiveNoticesForCompany(s(), inB4).some((n) => n.id === ntId))
+  s().loginAs('cs_liu')
+  const opts = getNoticeScopeOptions(s())
+  check('刘洋发通知范围仅 C 区(不可全园区)', !opts.canPark && opts.zoneIds.length === 1 && opts.zoneIds[0] === 'C' && opts.companyIds.every((id) => s().companies.find((c) => c.id === id)?.zoneId === 'C'))
 
-// ===================== 链路 6:发起催缴 → 标记上报 → 风险清单 =====================
-console.log('\n[6] 周杰已上报 + 新户发起催缴/上报 → 驾驶舱风险清单')
-check('周杰预置上报在风险清单中', getRiskList(s()).some((r) => r.text.includes('周杰')))
-s().startDunning(STORY_IDS.wangxiulan)
-const wangRecord = s().dunningRecords.find((r) => r.householdId === STORY_IDS.wangxiulan && r.status === 'active')
-check('对王秀兰发起催缴生成 active 记录', !!wangRecord)
-s().reportDunning(wangRecord!.id)
-check('标记上报后进入风险清单', getRiskList(s()).some((r) => r.text.includes('王秀兰')))
+  // ===== 链路 5:发票上传 → 企业端查询;权限隔离 =====
+  console.log('\n— 链路 5:发票上传与隔离 —')
+  s().loginAs('cs_wang')
+  s().uploadInvoice({ companyId: C2, month: '2026-06', category: 'utility', amount: 5200, fileName: '发票-精工精密制造-2026-06-水电能耗费.pdf' })
+  s().loginAs('company2')
+  check('company2 可查到新发票', scoped().invoices.some((i) => i.companyId === C2 && i.month === '2026-06' && i.category === 'utility'))
+  s().loginAs('company1')
+  check('company1 不可见他司发票', scoped().invoices.every((i) => i.companyId === STORY_COMPANY_IDS.one))
 
-// ===================== 附加:个人信息同步 + AI 客服 =====================
-console.log('\n[附] 个人信息跨端同步 + AI 客服规则回复')
-s().loginAs('liqiang')
-s().updateResidentProfile({ phone: '19900001111' })
-check(
-  '改手机号同步到物业端户档案',
-  s().households.find((h) => h.id === STORY_IDS.liqiang)?.ownerPhone === '19900001111',
-)
-const msgsBefore = s().chatMessages.length
-s().sendChatMessage('物业费怎么收?')
-await new Promise((r) => setTimeout(r, 800))
-const lastMsg = s().chatMessages[s().chatMessages.length - 1]
-check('AI 客服 600ms 后规则回复', s().chatMessages.length === msgsBefore + 2 && lastMsg.role === 'ai' && lastMsg.content.includes('2.5'))
+  // ===== 链路 6:主管调整权限 → 两位客服可见范围与数字实时变化 =====
+  console.log('\n— 链路 6:权限改配实时生效 —')
+  s().loginAs('admin')
+  const wangIdsBefore = s().csAssignments.find((a) => a.csUsername === 'cs_wang')!.companyIds
+  const liuIdsBefore = s().csAssignments.find((a) => a.csUsername === 'cs_liu')!.companyIds
+  s().loginAs('cs_wang')
+  const wangRecvBefore = getDashboardKpis(scoped()).receivable
+  s().loginAs('cs_liu')
+  const liuRecvBefore = getDashboardKpis(scoped()).receivable
+  s().loginAs('admin')
+  s().setCsAssignment('cs_wang', [...wangIdsBefore, C3]) // 企业③改配给王琳
+  s().loginAs('cs_wang')
+  check('王琳可见企业数 21 → 22', visibleCompanyIds(s()).size === 22 && visibleCompanyIds(s()).has(C3))
+  const wangRecvAfter = getDashboardKpis(scoped()).receivable
+  s().loginAs('cs_liu')
+  check('刘洋可见企业数 9 → 8', visibleCompanyIds(s()).size === 8 && !visibleCompanyIds(s()).has(C3))
+  const liuRecvAfter = getDashboardKpis(scoped()).receivable
+  check('两位客服应收随改配此消彼长', wangRecvAfter > wangRecvBefore && liuRecvAfter < liuRecvBefore, `王琳 +${wangRecvAfter - wangRecvBefore} / 刘洋 ${liuRecvAfter - liuRecvBefore}`)
+  s().loginAs('admin')
+  s().setCsAssignment('cs_liu', liuIdsBefore) // 恢复默认分配
+  check('恢复分配后回到 21 / 9', s().csAssignments.find((a) => a.csUsername === 'cs_wang')!.companyIds.length === 21 && s().csAssignments.find((a) => a.csUsername === 'cs_liu')!.companyIds.length === 9)
 
-console.log(failures === 0 ? '\n✅ 全部联动链路通过' : `\n❌ ${failures} 项失败`)
-process.exit(failures === 0 ? 0 : 1)
+  // ===== 链路 7:企业填写进行中调研 → 满意度聚合更新 =====
+  console.log('\n— 链路 7:满意度调研填写 —')
+  const sr3Before = s().surveyResponses.filter((r) => r.surveyId === 'SR-03').length
+  s().loginAs('company1')
+  s().submitSurveyResponse({ surveyId: 'SR-03', scores: { overall: 5, repair: 5, environment: 5, security: 4, communication: 5 }, comment: '服务到位,继续保持' })
+  check('SR-03 回复数 +1 且含 company1', s().surveyResponses.filter((r) => r.surveyId === 'SR-03').length === sr3Before + 1 && s().surveyResponses.some((r) => r.surveyId === 'SR-03' && r.companyId === STORY_COMPANY_IDS.one))
+
+  // ===== 链路 8:周任务标记完成 → 达成数变化 =====
+  console.log('\n— 链路 8:任务穿透与达成 —')
+  s().loginAs('cs_wang')
+  const internal = getScopedInternal(s())
+  const openWeek = internal.workTasks.find((t) => t.level === 'week' && t.status === 'open' && t.periodLabel.includes('第1周'))!
+  check('王琳可见自己名下的进行中周任务', !!openWeek && openWeek.ownerUsername === 'cs_wang')
+  const weekDoneBefore = s().workTasks.filter((t) => t.level === 'week' && t.status === 'done').length
+  s().completeTask(openWeek.id)
+  check('标记完成后周任务达成数 +1', s().workTasks.filter((t) => t.level === 'week' && t.status === 'done').length === weekDoneBefore + 1)
+
+  // ===== 链路 9:AI 咨询规则命中 =====
+  console.log('\n— 链路 9:AI 咨询 —')
+  s().loginAs('company1')
+  const msgBefore = s().chatMessages.length
+  s().sendChatMessage('物业费怎么收?')
+  await sleep(800)
+  const msgs = s().chatMessages
+  check('AI 咨询往返 +2 条且回复含费率 18', msgs.length === msgBefore + 2 && msgs[msgs.length - 1].role === 'ai' && msgs[msgs.length - 1].content.includes('18'), msgs[msgs.length - 1].content.slice(0, 40))
+
+  // ===== 链路 10:日报实时性(今日动作进入日报动态)=====
+  console.log('\n— 链路 10:日报实时联动 —')
+  s().loginAs('admin')
+  const dr = buildDailyReport(scoped(), getScopedInternal(s()))
+  check('今日缴费(③)计入日报今日收款', dr.payments.bills.some((b) => b.companyId === C3))
+  check('今日关闭工单 ≥ 1(链路 1 的签字关单)', dr.workOrders.closed >= 1)
+  check('今日动态含链路产生的条目', dr.feed.some((f) => f.channel === 'payment') && dr.feed.some((f) => f.channel === 'workOrder'))
+
+  console.log(failures === 0 ? '\n全部链路通过 ✅' : `\n${failures} 项断言失败 ❌`)
+  process.exit(failures === 0 ? 0 : 1)
+}
+
+void main()

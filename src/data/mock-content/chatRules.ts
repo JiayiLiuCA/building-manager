@@ -3,86 +3,92 @@ import { PROPERTY_FEE_RATE, SERVICE_PHONE } from '../constants'
 import type { ChatContext } from '../types'
 
 // ============================================================
-// AI 客服规则:keywords 命中(按顺序、首中即回)→ 生成回复。
-// 函数型回复可读业主上下文(欠费、在途工单),体现「智能」感。
-// 演示前可直接改文案,不影响逻辑。
+// AI 咨询规则引擎(园区语境):按顺序首个关键词命中即回复;
+// 回复函数读 ChatContext(企业实时上下文)体现「智能」。
+// 演示前可直接改文案,引擎不动。
 // ============================================================
+
+export const CHAT_GREETING =
+  '您好,我是和美产业园 AI 服务助手。可以帮您查询账单与欠费、报修进度、园区通知、发票开具、缴费方式等,请问有什么可以帮您?'
 
 interface ChatRule {
   keywords: string[]
   reply: (ctx: ChatContext) => string
 }
 
-export const CHAT_GREETING =
-  '您好,我是和美物业 AI 助手 🤖\n可以咨询:物业费标准、账单欠费、报修进度、缴费方式、停车、装修等问题。请问有什么可以帮您?'
-
 const RULES: ChatRule[] = [
   {
-    keywords: ['欠费', '账单', '应缴', '欠多少', '要交多少'],
+    keywords: ['欠费', '账单', '应缴', '待缴'],
     reply: (ctx) =>
       ctx.arrearsAmount > 0
-        ? `经查询,您的房屋(${ctx.householdLabel})目前共有 ${ctx.arrearsMonths} 个月账单未结清,合计 ${formatCurrency(ctx.arrearsAmount)}。您可以在「我的缴费」页面查看明细并在线缴纳。`
-        : `经查询,您的房屋(${ctx.householdLabel})当前无欠费,所有账单均已结清,感谢您的支持!`,
+        ? `${ctx.companyName}当前累计待缴 ${formatCurrency(ctx.arrearsAmount)}(涉及 ${ctx.arrearsMonths} 个月)。您可以在「账单与缴费」页勾选账单在线缴纳;如金额有疑问,可提交投诉或联系客服专员核对。`
+        : `${ctx.companyName}目前没有待缴账单,全部费用已结清。您可以在「账单与缴费」页查看近 12 个月账单明细。`,
   },
   {
-    keywords: ['报修进度', '维修进度', '修到哪', '工单状态', '进度'],
+    keywords: ['报修进度', '维修进度', '工单进度', '修得怎么样'],
     reply: (ctx) =>
       ctx.openWorkOrders.length > 0
-        ? `您当前有 ${ctx.openWorkOrders.length} 个在途工单:\n${ctx.openWorkOrders.map((w) => `· ${w.id}(${w.statusLabel})`).join('\n')}\n详情可在「报修 / 工单」页面查看完整时间线。`
-        : '您当前没有在途工单。如需报修,请在「报修 / 工单」页面提交,我们将在 48 小时内完成维修。',
+        ? `贵司当前有 ${ctx.openWorkOrders.length} 张在途工单:${ctx.openWorkOrders
+            .map((wo) => `${wo.id}(${wo.statusLabel})`)
+            .join('、')}。点击「报事报修」可查看处理时间线,完工后需要贵司电子签字确认。`
+        : '贵司当前没有在途工单。如有设施问题,可在「报事报修」页发起,物业承诺 4 小时内响应、48 小时内完成维修。',
   },
   {
-    keywords: ['物业费', '收费标准', '费率', '怎么收'],
+    keywords: ['物业费', '费率', '怎么收', '收费标准'],
     reply: (ctx) =>
-      `本小区物业费按 ${PROPERTY_FEE_RATE} 元/㎡·月 计收。您的房屋面积 ${ctx.areaSqm}㎡,每月物业费约 ${formatCurrency(ctx.monthlyPropertyFee)}${ctx.monthlyPropertyFee && ctx.arrearsAmount === 0 ? ',目前已按时缴清' : ''}。空置房屋经物业核实登记后按半价计收。`,
+      `园区物业服务费按 ${PROPERTY_FEE_RATE} 元/㎡·月计收。贵司计费面积 ${ctx.areaSqm}㎡,月物业服务费约 ${formatCurrency(ctx.monthlyPropertyFee)}。水电按园区总表分摊核抄,车位与增值服务按合同约定。`,
   },
   {
-    keywords: ['怎么缴', '缴费方式', '怎么交', '在哪交', '支付'],
+    keywords: ['发票', '开票', '税票'],
     reply: () =>
-      '您可以在本系统「我的缴费」页面在线缴纳(支持物业费、水费、电费等),也可前往物业服务中心刷卡或现金缴纳。线上缴费实时到账并自动开具电子收据。',
+      '每月账单缴清后,物业会在 3 个工作日内上传对应费类的电子发票。您可以在「发票查询」页按月份/费类筛选并下载 PDF;如需专票信息变更,请联系客服专员。',
   },
   {
-    keywords: ['报修', '维修', '坏了', '漏水', '没电'],
+    keywords: ['停电', '停水', '通知', '公告'],
+    reply: (ctx) =>
+      ctx.activeNoticeTitles.length > 0
+        ? `当前与贵司相关的生效通知有 ${ctx.activeNoticeTitles.length} 条:${ctx.activeNoticeTitles.join('、')}。详情请查看企业端首页通知区。`
+        : '当前没有与贵司相关的生效中通知。停水停电、公共维修等信息会第一时间发布在企业端首页。',
+  },
+  {
+    keywords: ['缴费方式', '怎么缴', '付款', '对公', '转账'],
+    reply: (ctx) =>
+      `${ctx.habitText ? `贵司登记的缴费习惯:${ctx.habitText}。` : ''}园区支持对公转账、支票与线上支付三种方式;在「账单与缴费」页可直接勾选账单在线缴纳,到账后收据与发票自动关联。`,
+  },
+  {
+    keywords: ['投诉', '不满意', '态度'],
     reply: () =>
-      '请在「报修 / 工单」页面提交报修(选择类型并描述问题),客服会尽快接单并派维修师傅与您预约上门时间。我们承诺 48 小时内完成维修,完成后请您电子签字确认。',
+      '您可以在「报事报修 → 投诉」提交投诉(可关联工单),物业将派至唯一责任部门限期处理;若对回复不满意,可申请主管介入,处理全程可追溯。',
   },
   {
-    keywords: ['停水', '停电', '没水'],
+    keywords: ['装修', '施工', '改造'],
     reply: () =>
-      '请先查看小区公告栏或业主群是否有计划性停水停电通知;如非计划性停供,可能是设施故障,请在「报修 / 工单」页面提交报修,我们会优先处理。',
+      '企业装修/改造需提前 5 个工作日向物业报备:提交施工方案与时间计划,物业审核消防与动火作业后发放施工许可;作业时间为工作日 8:30-18:00,噪音作业请安排在午休外时段。',
   },
   {
-    keywords: ['投诉'],
+    keywords: ['车位', '停车', '临停', '访客车'],
     reply: () =>
-      '您可以在「投诉」页面提交投诉(可关联具体工单),物业将派单至责任部门限期处理并回复您;若对处理结果不满意,可申请主管介入。',
+      '固定车位 300 元/个·月、租赁车位 500 元/个·月,可联系客服专员办理增减;访客车辆走临停通道按时计费,月度临停额度可在前台登记减免。',
   },
   {
-    keywords: ['装修'],
-    reply: () =>
-      '装修前请携带装修方案到物业服务中心办理开工备案,缴纳装修押金,并遵守作业时间(工作日 8:00-12:00、14:00-18:00),严禁破坏承重结构。',
+    keywords: ['人工', '电话', '客服', '联系'],
+    reply: () => `需要人工服务请拨打园区服务热线 ${SERVICE_PHONE}(工作日 8:30-18:00),或联系贵司的客服专员,我们会尽快跟进。`,
   },
   {
-    keywords: ['停车', '车位', '车库'],
-    reply: () =>
-      '地面访客车位按 5 元/小时计费;产权/租赁车位管理费为 150 元/月,可在「我的缴费」中一并缴纳。如需办理月租车位,请联系物业服务中心。',
-  },
-  {
-    keywords: ['电话', '人工', '客服', '联系'],
-    reply: () =>
-      `客服热线:${SERVICE_PHONE}(服务时间 8:30-18:00)。紧急报修(水管爆裂、电梯困人等)24 小时受理。您也可以继续在这里向我提问。`,
-  },
-  {
-    keywords: ['你好', '您好', '在吗', 'hi', '帮助'],
-    reply: (ctx) => `${ctx.ownerName}您好!${CHAT_GREETING}`,
+    keywords: ['你好', '在吗', '帮助', 'hi', 'hello'],
+    reply: (ctx) => `您好,${ctx.companyName}!我可以帮您查账单、跟工单、看通知、查发票,直接输入问题即可。`,
   },
 ]
 
-const FALLBACK = (ctx: ChatContext) =>
-  `抱歉,这个问题我暂时无法准确回答 😅\n您可以换个问法(如「物业费怎么收」「我的报修进度」),或拨打客服热线 ${SERVICE_PHONE} 转人工咨询。${ctx.arrearsAmount > 0 ? `\n\n小提示:您当前有 ${formatCurrency(ctx.arrearsAmount)} 账单未结清,可在「我的缴费」中处理。` : ''}`
+const FALLBACK = (ctx: ChatContext): string =>
+  `这个问题我还在学习中,建议拨打服务热线 ${SERVICE_PHONE} 联系客服专员。${
+    ctx.arrearsAmount > 0 ? `另外提醒:贵司有 ${formatCurrency(ctx.arrearsAmount)} 待缴账单,可在「账单与缴费」页处理。` : ''
+  }`
 
 export function matchChatReply(text: string, ctx: ChatContext): string {
+  const lower = text.toLowerCase()
   for (const rule of RULES) {
-    if (rule.keywords.some((k) => text.toLowerCase().includes(k))) return rule.reply(ctx)
+    if (rule.keywords.some((k) => lower.includes(k))) return rule.reply(ctx)
   }
   return FALLBACK(ctx)
 }

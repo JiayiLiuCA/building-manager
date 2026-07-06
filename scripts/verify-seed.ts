@@ -2,7 +2,15 @@
 // S2 版:数据形状 / 故事摆位 / 覆盖面断言(内联算术);S3 起追加三视角一致性与权限隔离断言。
 import { buildSeedData } from '../src/data/seed'
 import { DEFAULT_CS_ZONES, STORY_COMPANY_IDS } from '../src/data/seed/constants'
-import type { Bill } from '../src/data/types'
+import { getBuildingCollectionTable, getCsCollectionTable, getCollectionTrend, getMonthCollection, getWaiverStats } from '../src/data/selectors/billingSelectors'
+import { buildDailyReport } from '../src/data/selectors/dailyReportSelectors'
+import { getDashboardKpis } from '../src/data/selectors/dashboardSelectors'
+import { getFollowUpRows, getFollowUpSuggestion } from '../src/data/selectors/followUpSelectors'
+import { getActiveNoticesForCompany } from '../src/data/selectors/noticeSelectors'
+import { getPeriodAchievement } from '../src/data/selectors/revenueSelectors'
+import { getCurrentSatisfaction } from '../src/data/selectors/satisfactionSelectors'
+import { getScopedData, getScopedInternal, visibleCompanyIds, type ScopedState } from '../src/data/selectors/scope'
+import type { Bill, CurrentUser } from '../src/data/types'
 import { CURRENT_MONTH, DEMO_TODAY, diffHours, lastMonths } from '../src/lib/date'
 
 const data = buildSeedData()
@@ -251,6 +259,76 @@ check('存在已撤销通知示例', data.notices.some((n) => n.revokedAt != nul
 
 check('收款跟进历史:②一条已解决记录', data.followUpRecords.length === 1 && data.followUpRecords[0].companyId === 'C-13' && data.followUpRecords[0].status === 'resolved')
 
-console.log(`\n当月应收 ${sum(juneAll)} 元,实收 ${sumPaid(juneAll)} 元,收缴率 ${pct(juneRate)}`)
+// ============================================================
+// S3 追加:三视角一致性 / 跨模块口径一致 / 权限隔离(经 scope 层)
+// ============================================================
+console.log('\n=== 三视角与权限隔离 ===')
+
+const asUser = (user: CurrentUser): ScopedState => getScopedData({ ...data, currentUser: user })
+const adminView = asUser({ role: 'supervisor', username: 'admin', displayName: '陈志远' })
+const wangView = asUser({ role: 'cs', username: 'cs_wang', displayName: '王琳' })
+const liuView = asUser({ role: 'cs', username: 'cs_liu', displayName: '刘洋' })
+const c1View = asUser({ role: 'company', username: 'company1', displayName: '云脉智能科技', companyId: 'C-03' })
+
+const kAdmin = getDashboardKpis(adminView)
+const kWang = getDashboardKpis(wangView)
+const kLiu = getDashboardKpis(liuView)
+
+check('驾驶舱应收:admin = 王琳 + 刘洋 + 园区级', kAdmin.receivable === kWang.receivable + kLiu.receivable + sum(juneAll.filter((b) => !b.companyId)))
+check('驾驶舱应收与内联口径一致', kAdmin.receivable === sum(juneAll) && kWang.receivable === sum(juneWang) && kLiu.receivable === sum(juneLiu))
+check('三视角收缴率两两可辨(≥0.3pp)', Math.abs(kAdmin.collectionRate - kWang.collectionRate) >= 0.003 && Math.abs(kAdmin.collectionRate - kLiu.collectionRate) >= 0.003 && Math.abs(kWang.collectionRate - kLiu.collectionRate) >= 0.015, `${pct(kAdmin.collectionRate)}/${pct(kWang.collectionRate)}/${pct(kLiu.collectionRate)}`)
+check('减免 KPI = Σ waivers(admin 视角)', kAdmin.waiverMonth === 1500 && kAdmin.waiverYear === 3500 && Math.abs(getWaiverStats(adminView).monthAmount - 1500) < 1e-6)
+check('王琳视角减免不含刘洋侧(全部减免都在 A/B 区)', getWaiverStats(wangView).yearAmount === 3500 && getWaiverStats(liuView).yearAmount === 0)
+
+// 楼栋收缴率表:区小计 = 区内楼栋和;总计 + 园区级 = KPI 应收;A3 收缴率 = 企业① 收缴率
+const table = getBuildingCollectionTable(adminView)
+const subtotalOk = table.groups.every((g) => Math.abs(g.subtotal.receivable - g.rows.reduce((s, r) => s + r.receivable, 0)) < 1e-6)
+check('楼栋表区小计 = 区内楼栋求和', subtotalOk)
+check('楼栋表总计 + 园区级 = KPI 应收', table.total.receivable + sum(juneAll.filter((b) => !b.companyId)) === kAdmin.receivable)
+const a3Row = table.groups.flatMap((g) => g.rows).find((r) => r.building.id === 'A3')!
+const c03Coll = getMonthCollection(adminView, CURRENT_MONTH, { companyId: 'C-03' })
+check('A3 整栋独占:楼栋收缴率 = 企业①收缴率', a3Row.wholeCompany?.id === 'C-03' && Math.abs(a3Row.rate - c03Coll.rate) < 1e-9)
+check('客服收缴率表:admin 见两行 + 合计 = 两行之和', (() => { const t = getCsCollectionTable(adminView); return t.rows.length === 2 && t.total.receivable === t.rows.reduce((s, r) => s + r.receivable, 0) })())
+check('客服收缴率表:王琳视角只见自己一行', getCsCollectionTable(wangView).rows.length === 1 && getCsCollectionTable(wangView).rows[0].csUsername === 'cs_wang')
+
+// 四费类月达成之和 = 驾驶舱本月实收;趋势当月点 = KPI
+const juneP = { kind: 'month' as const, key: CURRENT_MONTH }
+const catSum = (['property', 'vehicle', 'utility', 'valueAdded'] as const).reduce((s, cat) => s + getPeriodAchievement(adminView, cat, juneP).achieved, 0)
+check('经营四费类当月达成之和 = 驾驶舱本月实收', catSum === kAdmin.received, `${catSum} vs ${kAdmin.received}`)
+const trend = getCollectionTrend(adminView, 12)
+check('收费趋势当月点 = KPI 应收/实收', trend[trend.length - 1].receivable === kAdmin.receivable && trend[trend.length - 1].received === kAdmin.received)
+
+// 三色摆位(经 selector)
+const sugg = (id: string) => getFollowUpSuggestion(adminView, id)
+check('三色:②hold / ③collect / C-18 collect', sugg('C-13') === 'hold' && sugg('C-25') === 'collect' && sugg('C-18') === 'collect')
+check('三色:C-05 / C-29 / C-21 均为 pending(⚪️)', sugg('C-05') === 'pending' && sugg('C-29') === 'pending' && sugg('C-21') === 'pending')
+check('收款跟进列表 = 6 家(欠费少叙事)', getFollowUpRows(adminView).length === 6)
+check('刘洋跟进列表只含 C 区企业', getFollowUpRows(liuView).every((r) => r.company.zoneId === 'C'))
+
+// 满意度:驾驶舱 KPI 与 selector 一致
+check('驾驶舱满意度 = getCurrentSatisfaction', Math.abs(kAdmin.satisfaction - getCurrentSatisfaction(adminView).score) < 1e-9)
+
+// 日报:今日收款按角色成立;付款日提示 = 亿讯传媒(已到账)
+const drAdmin = buildDailyReport(adminView, getScopedInternal({ ...data, currentUser: { role: 'supervisor', username: 'admin', displayName: '陈志远' } }))
+const drLiu = buildDailyReport(liuView, getScopedInternal({ ...data, currentUser: { role: 'cs', username: 'cs_liu', displayName: '刘洋' } }))
+const todayPaidInline = data.bills.filter((b) => b.paidAt?.startsWith(DEMO_TODAY)).reduce((s, b) => s + Math.min(b.paidAmount, b.amount), 0)
+check('日报今日收款(admin)= 内联口径', drAdmin.payments.amount === todayPaidInline, `${drAdmin.payments.amount}`)
+check('日报今日收款:刘洋 < admin(权限过滤生效)', drLiu.payments.amount < drAdmin.payments.amount)
+check('日报付款日提示:亿讯传媒(payDay=6,已到账)', drAdmin.paydayHints.length === 1 && drAdmin.paydayHints[0].company.id === 'C-07' && drAdmin.paydayHints[0].paid)
+check('日报今日动态非空且含收款/巡检条目', drAdmin.feed.length >= 4 && drAdmin.feed.some((f) => f.channel === 'payment') && drAdmin.feed.some((f) => f.channel === 'inspection'))
+
+// 权限隔离
+check('cs_liu 可见账单不含企业①②', !liuView.bills.some((b) => b.companyId === 'C-03' || b.companyId === 'C-13'))
+check('cs_wang 可见账单不含企业③', !wangView.bills.some((b) => b.companyId === 'C-25'))
+check('company1 仅见自己(账单/工单/发票)', c1View.bills.every((b) => b.companyId === 'C-03') && c1View.workOrders.every((w) => w.companyId === 'C-03') && c1View.invoices.every((i) => i.companyId === 'C-03'))
+check('企业端不含园区级账单与公共工单', !c1View.bills.some((b) => !b.companyId) && !c1View.workOrders.some((w) => w.kind === 'public'))
+check('企业角色内控数据为空', (() => { const i = getScopedInternal({ ...data, currentUser: { role: 'company', username: 'company1', displayName: 'x', companyId: 'C-03' } }); return i.inspections.length === 0 && i.workTasks.length === 0 && i.meterReadings.length === 0 && i.maintenanceOrders.length === 0 })())
+check('cs_liu 内控:任务/巡检/核抄仅自己名下', (() => { const i = getScopedInternal({ ...data, currentUser: { role: 'cs', username: 'cs_liu', displayName: '刘洋' } }); return i.workTasks.every((t) => t.ownerUsername === 'cs_liu') && i.inspections.every((x) => x.ownerUsername === 'cs_liu') && i.meterReadings.every((m) => m.ownerUsername === 'cs_liu') && i.maintenanceOrders.length === data.maintenanceOrders.length })())
+check('visibleCompanyIds:主管 30 / 王琳 21 / 刘洋 9 / 企业 1', visibleCompanyIds({ ...data, currentUser: { role: 'supervisor', username: 'admin', displayName: 'x' } }).size === 30 && visibleCompanyIds({ ...data, currentUser: { role: 'cs', username: 'cs_wang', displayName: 'x' } }).size === 21 && visibleCompanyIds({ ...data, currentUser: { role: 'cs', username: 'cs_liu', displayName: 'x' } }).size === 9 && visibleCompanyIds({ ...data, currentUser: { role: 'company', username: 'company1', displayName: 'x', companyId: 'C-03' } }).size === 1)
+
+// 停电通知定向:company2 相关,company1/3 不相关
+check('B 区停电通知:company2 可见 / company1、3 不可见', getActiveNoticesForCompany(data, 'C-13').some((n) => n.id === 'NT-001') && !getActiveNoticesForCompany(data, 'C-03').some((n) => n.id === 'NT-001') && !getActiveNoticesForCompany(data, 'C-25').some((n) => n.id === 'NT-001'))
+
+console.log(`\n当月应收 ${sum(juneAll)} 元,实收 ${sumPaid(juneAll)} 元,收缴率 ${pct(juneRate)};三视角收缴率 ${pct(kAdmin.collectionRate)} / ${pct(kWang.collectionRate)} / ${pct(kLiu.collectionRate)}`)
 console.log(failures === 0 ? '\n全部断言通过 ✅' : `\n${failures} 项断言失败 ❌`)
 process.exit(failures === 0 ? 0 : 1)

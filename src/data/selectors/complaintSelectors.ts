@@ -23,26 +23,26 @@ export function isComplaintOpen(c: Complaint): boolean {
   return deriveComplaintStatus(c) !== 'closed'
 }
 
-/** 是否曾升级到主管(无论当前状态) */
 export function isSupervisorInvolved(c: Complaint): boolean {
   return c.events.some((e) => e.type === 'SUPERVISOR_REQUESTED' || e.type === 'SUPERVISOR_REPLIED')
 }
 
-export function getHouseholdComplaints(data: Pick<AppData, 'complaints'>, householdId: string): Complaint[] {
+type ComplaintSlice = Pick<AppData, 'complaints'>
+
+export function getCompanyComplaints(data: ComplaintSlice, companyId: string): Complaint[] {
   return data.complaints
-    .filter((c) => c.householdId === householdId)
+    .filter((c) => c.companyId === companyId)
     .sort((a, b) => complaintCreatedAt(b).localeCompare(complaintCreatedAt(a)))
 }
 
-/** 反复投诉户:历史投诉 ≥ 3 条 */
-export function isRepeatComplainer(data: Pick<AppData, 'complaints'>, householdId: string): boolean {
-  return data.complaints.filter((c) => c.householdId === householdId).length >= 3
+/** 反复投诉:历史投诉 ≥ 3 条 */
+export function isRepeatComplainer(data: ComplaintSlice, companyId: string): boolean {
+  return data.complaints.filter((c) => c.companyId === companyId).length >= 3
 }
 
-/** 投诉满意率 = 未升级主管即关闭的投诉 / 已关闭投诉(一次性解决率) */
-export function getComplaintSatisfactionRate(data: Pick<AppData, 'complaints'>): number {
-  const closed = data.complaints.filter((c) => !isComplaintOpen(c))
+/** 投诉一次性解决率:未升级主管即关闭 / 全部已关闭 */
+export function getComplaintSatisfactionRate(data: ComplaintSlice): number {
+  const closed = data.complaints.filter((c) => deriveComplaintStatus(c) === 'closed')
   if (closed.length === 0) return 1
-  const satisfied = closed.filter((c) => !isSupervisorInvolved(c)).length
-  return satisfied / closed.length
+  return closed.filter((c) => !isSupervisorInvolved(c)).length / closed.length
 }

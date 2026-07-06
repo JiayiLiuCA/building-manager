@@ -1,5 +1,10 @@
 import { CURRENT_MONTH, lastMonths } from '../../lib/date'
-import type { AppData, Bill, BillStatus, FeeType, Household } from '../types'
+import type { AppData, Bill, BillStatus, Building, Company, FeeCategory } from '../types'
+
+// ============================================================
+// 账单 / 收缴聚合。输入一律为「已 scope 的数据视图」(见 scope.ts)。
+// 口径:应收 = Σamount(减免后净额);实收 = Σmin(paidAmount, amount)。
+// ============================================================
 
 export function getBillStatus(bill: Bill): BillStatus {
   if (bill.paidAmount >= bill.amount) return 'paid'
@@ -7,98 +12,70 @@ export function getBillStatus(bill: Bill): BillStatus {
   return 'unpaid'
 }
 
-/** 该账单尚欠金额 */
 export function billOutstanding(bill: Bill): number {
   return Math.max(0, bill.amount - bill.paidAmount)
 }
 
-const FEE_ORDER = { property: 0, water: 1, electricity: 2, parking: 3 } as const
+export const FEE_ORDER: Record<FeeCategory, number> = { property: 0, utility: 1, vehicle: 2, valueAdded: 3 }
 
-/** 某户全部账单,按月份倒序、费用类型固定顺序 */
-export function getHouseholdBills(data: Pick<AppData, 'bills'>, householdId: string): Bill[] {
+type BillsSlice = Pick<AppData, 'bills'>
+
+export function getCompanyBills(data: BillsSlice, companyId: string): Bill[] {
   return data.bills
-    .filter((b) => b.householdId === householdId)
-    .sort((a, b) => b.month.localeCompare(a.month) || FEE_ORDER[a.feeType] - FEE_ORDER[b.feeType])
-}
-
-/** 月度账单状态:none = 当月该费用无账单(如空置月无水电) */
-export type MonthBillStatus = 'paid' | 'partial' | 'unpaid' | 'none'
-
-export interface MonthFeeLine {
-  feeType: FeeType
-  bill: Bill
-  outstanding: number
+    .filter((b) => b.companyId === companyId)
+    .sort((a, b) => b.month.localeCompare(a.month) || FEE_ORDER[a.category] - FEE_ORDER[b.category])
 }
 
 export interface MonthlyBills {
-  month: string // 'yyyy-MM'
+  month: string
   billed: number
   paid: number
   outstanding: number
-  status: MonthBillStatus
-  /** 当月各费用类型明细,按费用类型固定顺序 */
-  lines: MonthFeeLine[]
+  status: BillStatus | 'none'
+  lines: Bill[]
 }
 
-/** 某户某费用类型出现过的月份是否存在(供「按费用类型筛选」按需展示标签) */
-export function getHouseholdFeeTypes(data: Pick<AppData, 'bills'>, householdId: string): FeeType[] {
-  const present = new Set(data.bills.filter((b) => b.householdId === householdId).map((b) => b.feeType))
-  return (Object.keys(FEE_ORDER) as FeeType[]).filter((ft) => present.has(ft))
-}
-
-/**
- * 某户近 n 个月账单按月聚合(最新月在前),每月含费用类型拆分与缴费状态。
- * 传入 feeType 时仅统计该费用类型,用于业主端「只看物业费 / 水费…」的历史视图。
- */
-export function getHouseholdMonthlyBills(
-  data: Pick<AppData, 'bills'>,
-  householdId: string,
-  n = 12,
-  feeType?: FeeType,
-): MonthlyBills[] {
-  const byMonth = new Map<string, Bill[]>()
-  for (const b of data.bills) {
-    if (b.householdId !== householdId) continue
-    if (feeType && b.feeType !== feeType) continue
-    const arr = byMonth.get(b.month)
-    if (arr) arr.push(b)
-    else byMonth.set(b.month, [b])
-  }
-
-  return lastMonths(n)
-    .map((month): MonthlyBills => {
-      const monthBills = (byMonth.get(month) ?? []).sort((a, b) => FEE_ORDER[a.feeType] - FEE_ORDER[b.feeType])
-      const billed = monthBills.reduce((s, b) => s + b.amount, 0)
-      const paid = monthBills.reduce((s, b) => s + Math.min(b.paidAmount, b.amount), 0)
-      const outstanding = Math.max(0, billed - paid)
-      const status: MonthBillStatus =
-        monthBills.length === 0 ? 'none' : outstanding === 0 ? 'paid' : paid > 0 ? 'partial' : 'unpaid'
-      return {
-        month,
-        billed,
-        paid,
-        outstanding,
-        status,
-        lines: monthBills.map((bill) => ({ feeType: bill.feeType, bill, outstanding: billOutstanding(bill) })),
-      }
+/** 某企业近 n 个月按月聚合(最新月在前) */
+export function getCompanyMonthlyBills(data: BillsSlice, companyId: string, n = 12): MonthlyBills[] {
+  const months = lastMonths(n)
+  return months
+    .map((month) => {
+      const lines = data.bills
+        .filter((b) => b.companyId === companyId && b.month === month)
+        .sort((a, b) => FEE_ORDER[a.category] - FEE_ORDER[b.category])
+      const billed = lines.reduce((s, b) => s + b.amount, 0)
+      const paid = lines.reduce((s, b) => s + Math.min(b.paidAmount, b.amount), 0)
+      const status: MonthlyBills['status'] =
+        lines.length === 0 ? 'none' : paid >= billed ? 'paid' : paid > 0 ? 'partial' : 'unpaid'
+      return { month, billed, paid, outstanding: billed - paid, status, lines }
     })
-    .reverse() // 最新月在前
+    .reverse()
 }
 
 export interface Arrears {
   amount: number
-  /** 含未缴账单的去重月份数 */
   months: number
   bills: Bill[]
 }
 
-export function getArrears(data: Pick<AppData, 'bills'>, householdId: string): Arrears {
-  const owing = data.bills.filter((b) => b.householdId === householdId && billOutstanding(b) > 0)
+/** 某企业当前欠费:金额、去重月份数、欠费账单(按月升序) */
+export function getArrears(data: BillsSlice, companyId: string): Arrears {
+  const owing = data.bills
+    .filter((b) => b.companyId === companyId && b.paidAmount < b.amount)
+    .sort((a, b) => a.month.localeCompare(b.month) || FEE_ORDER[a.category] - FEE_ORDER[b.category])
   return {
     amount: owing.reduce((s, b) => s + billOutstanding(b), 0),
     months: new Set(owing.map((b) => b.month)).size,
-    bills: owing.sort((a, b) => a.month.localeCompare(b.month)),
+    bills: owing,
   }
+}
+
+export interface CollectionScope {
+  zoneId?: string
+  buildingId?: string
+  companyId?: string
+  category?: FeeCategory
+  subType?: Bill['subType']
 }
 
 export interface CollectionSummary {
@@ -107,103 +84,186 @@ export interface CollectionSummary {
   rate: number
 }
 
-function summarize(bills: Bill[]): CollectionSummary {
+type CollectSlice = Pick<AppData, 'bills' | 'companies'>
+
+function scopedBills(data: CollectSlice, month: string, scope: CollectionScope): Bill[] {
+  let companyFilter: Set<string> | null = null
+  if (scope.companyId) companyFilter = new Set([scope.companyId])
+  else if (scope.buildingId) companyFilter = new Set(data.companies.filter((c) => c.buildingId === scope.buildingId).map((c) => c.id))
+  else if (scope.zoneId) companyFilter = new Set(data.companies.filter((c) => c.zoneId === scope.zoneId).map((c) => c.id))
+
+  return data.bills.filter((b) => {
+    if (b.month !== month) return false
+    if (scope.category && b.category !== scope.category) return false
+    if (scope.subType && b.subType !== scope.subType) return false
+    if (companyFilter) return !!b.companyId && companyFilter.has(b.companyId)
+    return true // 无空间范围:含园区级账单
+  })
+}
+
+export function getMonthCollection(data: CollectSlice, month = CURRENT_MONTH, scope: CollectionScope = {}): CollectionSummary {
+  const bills = scopedBills(data, month, scope)
   const receivable = bills.reduce((s, b) => s + b.amount, 0)
   const received = bills.reduce((s, b) => s + Math.min(b.paidAmount, b.amount), 0)
   return { receivable, received, rate: receivable === 0 ? 1 : received / receivable }
 }
 
-export interface CollectionScope {
-  communityId?: string
-  buildingId?: string
-  unitId?: string
-  feeType?: Bill['feeType']
+export interface CollectionTrendPoint extends CollectionSummary {
+  month: string
 }
 
-/** 某月(含范围/费用类型过滤)的应收/实收/收缴率 */
-export function getMonthCollection(
-  data: Pick<AppData, 'bills' | 'households'>,
-  month: string,
-  scope: CollectionScope = {},
-): CollectionSummary {
-  const inScope = scopeFilter(data.households, scope)
-  const bills = data.bills.filter(
-    (b) => b.month === month && (!scope.feeType || b.feeType === scope.feeType) && inScope(b.householdId),
-  )
-  return summarize(bills)
+export function getCollectionTrend(data: CollectSlice, n = 12, scope: CollectionScope = {}): CollectionTrendPoint[] {
+  return lastMonths(n).map((month) => ({ month, ...getMonthCollection(data, month, scope) }))
 }
 
-function scopeFilter(households: Household[], scope: CollectionScope): (hid: string) => boolean {
-  if (!scope.communityId && !scope.buildingId && !scope.unitId) return () => true
-  const ok = new Set(
-    households
-      .filter(
-        (h) =>
-          (!scope.communityId || h.communityId === scope.communityId) &&
-          (!scope.buildingId || h.buildingId === scope.buildingId) &&
-          (!scope.unitId || h.unitId === scope.unitId),
-      )
-      .map((h) => h.id),
-  )
-  return (hid) => ok.has(hid)
+// ===== 楼栋收缴率表(按区分组 + 区小计 + 总计)=====
+
+export interface BuildingCollectionRow extends CollectionSummary {
+  building: Building
+  companyCount: number
+  /** 整栋独占时 = 该企业(楼栋收缴率即企业收缴率) */
+  wholeCompany?: Company
 }
 
-/** 近 n 个月收缴率趋势(升序) */
-export function getCollectionTrend(
-  data: Pick<AppData, 'bills' | 'households'>,
-  n = 12,
-): { month: string; rate: number; receivable: number; received: number }[] {
-  return lastMonths(n).map((month) => {
-    const s = getMonthCollection(data, month)
-    return { month, rate: s.rate, receivable: s.receivable, received: s.received }
-  })
+export interface ZoneCollectionGroup {
+  zoneId: string
+  zoneName: string
+  rows: BuildingCollectionRow[]
+  subtotal: CollectionSummary
 }
 
-/** 各小区当月收缴对比 */
-export function getCommunityCollection(
-  data: Pick<AppData, 'bills' | 'households' | 'communities'>,
-  month = CURRENT_MONTH,
-): ({ communityId: string; name: string } & CollectionSummary)[] {
-  return data.communities.map((c) => ({
-    communityId: c.id,
-    name: c.name,
-    ...getMonthCollection(data, month, { communityId: c.id }),
-  }))
+export interface BuildingCollectionTable {
+  groups: ZoneCollectionGroup[]
+  /** 总计(不含园区级账单) */
+  total: CollectionSummary
 }
 
-/** 某小区各楼栋当月收缴对比 */
-export function getBuildingCollection(
-  data: Pick<AppData, 'bills' | 'households' | 'buildings'>,
-  communityId: string,
-  month = CURRENT_MONTH,
-): ({ buildingId: string; no: string } & CollectionSummary)[] {
-  return data.buildings
-    .filter((b) => b.communityId === communityId)
-    .map((b) => ({ buildingId: b.id, no: b.no, ...getMonthCollection(data, month, { buildingId: b.id }) }))
+type SpaceSlice = Pick<AppData, 'bills' | 'companies' | 'buildings' | 'zones'>
+
+export function getBuildingCollectionTable(data: SpaceSlice, month = CURRENT_MONTH): BuildingCollectionTable {
+  const groups: ZoneCollectionGroup[] = []
+  let totalReceivable = 0
+  let totalReceived = 0
+
+  for (const zone of data.zones) {
+    const buildings = data.buildings.filter((b) => b.zoneId === zone.id)
+    const rows: BuildingCollectionRow[] = []
+    for (const building of buildings) {
+      const companies = data.companies.filter((c) => c.buildingId === building.id)
+      if (companies.length === 0) continue // 可见范围外的楼栋不出行
+      const summary = getMonthCollection(data, month, { buildingId: building.id })
+      rows.push({
+        building,
+        companyCount: companies.length,
+        wholeCompany: companies.length === 1 && companies[0].occupancy.type === 'whole' ? companies[0] : undefined,
+        ...summary,
+      })
+    }
+    if (rows.length === 0) continue
+    const receivable = rows.reduce((s, r) => s + r.receivable, 0)
+    const received = rows.reduce((s, r) => s + r.received, 0)
+    groups.push({
+      zoneId: zone.id,
+      zoneName: zone.name,
+      rows,
+      subtotal: { receivable, received, rate: receivable === 0 ? 1 : received / receivable },
+    })
+    totalReceivable += receivable
+    totalReceived += received
+  }
+
+  return {
+    groups,
+    total: {
+      receivable: totalReceivable,
+      received: totalReceived,
+      rate: totalReceivable === 0 ? 1 : totalReceived / totalReceivable,
+    },
+  }
 }
 
-/** 某楼栋各单元当月收缴对比 */
-export function getUnitCollection(
-  data: Pick<AppData, 'bills' | 'households' | 'units'>,
-  buildingId: string,
-  month = CURRENT_MONTH,
-): ({ unitId: string; no: string } & CollectionSummary)[] {
-  return data.units
-    .filter((u) => u.buildingId === buildingId)
-    .map((u) => ({ unitId: u.id, no: u.no, ...getMonthCollection(data, month, { unitId: u.id }) }))
+// ===== 客服个人收缴率表(+ 合计行)=====
+
+export interface CsCollectionRow extends CollectionSummary {
+  csUsername: string
+  csName: string
+  companyCount: number
 }
 
-/** 全部欠费户(欠费金额降序) */
-export function getHouseholdsWithArrears(
-  data: Pick<AppData, 'bills' | 'households'>,
-): { household: Household; arrears: Arrears }[] {
-  return data.households
-    .map((household) => ({ household, arrears: getArrears(data, household.id) }))
-    .filter((row) => row.arrears.amount > 0)
+export interface CsCollectionTable {
+  rows: CsCollectionRow[]
+  total: CollectionSummary
+}
+
+type CsSlice = Pick<AppData, 'bills' | 'companies' | 'csAssignments' | 'accounts'>
+
+export function getCsCollectionTable(data: CsSlice, month = CURRENT_MONTH): CsCollectionTable {
+  const visible = new Set(data.companies.map((c) => c.id))
+  const rows: CsCollectionRow[] = []
+  for (const assignment of data.csAssignments) {
+    const companyIds = assignment.companyIds.filter((id) => visible.has(id))
+    if (companyIds.length === 0) continue
+    const idSet = new Set(companyIds)
+    const bills = data.bills.filter((b) => b.month === month && b.companyId && idSet.has(b.companyId))
+    const receivable = bills.reduce((s, b) => s + b.amount, 0)
+    const received = bills.reduce((s, b) => s + Math.min(b.paidAmount, b.amount), 0)
+    rows.push({
+      csUsername: assignment.csUsername,
+      csName: data.accounts.find((a) => a.username === assignment.csUsername)?.displayName ?? assignment.csUsername,
+      companyCount: companyIds.length,
+      receivable,
+      received,
+      rate: receivable === 0 ? 1 : received / receivable,
+    })
+  }
+  const receivable = rows.reduce((s, r) => s + r.receivable, 0)
+  const received = rows.reduce((s, r) => s + r.received, 0)
+  return { rows, total: { receivable, received, rate: receivable === 0 ? 1 : received / receivable } }
+}
+
+// ===== 欠费总览(驾驶舱次要紧凑卡)=====
+
+export interface ArrearsOverview {
+  totalAmount: number
+  companyCount: number
+  rows: { company: Company; arrears: Arrears }[]
+}
+
+type ArrearsSlice = Pick<AppData, 'bills' | 'companies'>
+
+/** 历史 + 当期全部欠费(仅企业账单),金额降序 */
+export function getArrearsOverview(data: ArrearsSlice): ArrearsOverview {
+  const rows = data.companies
+    .map((company) => ({ company, arrears: getArrears(data, company.id) }))
+    .filter((r) => r.arrears.amount > 0)
     .sort((a, b) => b.arrears.amount - a.arrears.amount)
+  return {
+    totalAmount: rows.reduce((s, r) => s + r.arrears.amount, 0),
+    companyCount: rows.length,
+    rows,
+  }
 }
 
-export function getVacancyRate(data: Pick<AppData, 'households'>): number {
-  if (data.households.length === 0) return 0
-  return data.households.filter((h) => h.isVacant).length / data.households.length
+// ===== 减免聚合(驾驶舱 KPI)=====
+
+export interface WaiverStats {
+  monthAmount: number
+  yearAmount: number
+  /** 本月减免占本月应收(含减免前口径)比 */
+  monthRatio: number
+}
+
+type WaiverSlice = Pick<AppData, 'bills' | 'waivers'>
+
+export function getWaiverStats(data: WaiverSlice, month = CURRENT_MONTH): WaiverStats {
+  const year = month.slice(0, 4)
+  const monthAmount = data.waivers.filter((w) => w.month === month).reduce((s, w) => s + w.amount, 0)
+  const yearAmount = data.waivers.filter((w) => w.month.startsWith(year)).reduce((s, w) => s + w.amount, 0)
+  const receivable = data.bills.filter((b) => b.month === month).reduce((s, b) => s + b.amount, 0)
+  const gross = receivable + monthAmount
+  return { monthAmount, yearAmount, monthRatio: gross === 0 ? 0 : monthAmount / gross }
+}
+
+export function getCompanyWaivers(data: Pick<AppData, 'waivers'>, companyId: string) {
+  return data.waivers.filter((w) => w.companyId === companyId).sort((a, b) => b.month.localeCompare(a.month))
 }
