@@ -2,6 +2,17 @@ import { Navigate, Route, Routes } from 'react-router'
 import { CompanyLayout } from '@/layouts/CompanyLayout'
 import { PropertyLayout } from '@/layouts/PropertyLayout'
 import { RequireRole, RootRedirect } from '@/layouts/RequireRole'
+import { CompanyBillsPage } from '@/pages/company/CompanyBillsPage'
+import { CompanyChatPage } from '@/pages/company/CompanyChatPage'
+import { CompanyComplaintDetailPage } from '@/pages/company/CompanyComplaintDetailPage'
+import { CompanyHomePage } from '@/pages/company/CompanyHomePage'
+import { CompanyInvoicesPage } from '@/pages/company/CompanyInvoicesPage'
+import { CompanyProfilePage } from '@/pages/company/CompanyProfilePage'
+import { CompanySurveyPage } from '@/pages/company/CompanySurveyPage'
+import { CompanyWorkOrderDetailPage } from '@/pages/company/CompanyWorkOrderDetailPage'
+import { CompanyWorkOrdersPage } from '@/pages/company/CompanyWorkOrdersPage'
+import { NewComplaintPage } from '@/pages/company/NewComplaintPage'
+import { NewWorkOrderPage } from '@/pages/company/NewWorkOrderPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { DailyReportPage } from '@/pages/property/DailyReportPage'
@@ -15,18 +26,13 @@ import { RevenuePropertyZonePage } from '@/pages/property/revenue/RevenuePropert
 import { RevenueUtilityPage } from '@/pages/property/revenue/RevenueUtilityPage'
 import { RevenueValueAddedPage } from '@/pages/property/revenue/RevenueValueAddedPage'
 import { RevenueVehiclePage } from '@/pages/property/revenue/RevenueVehiclePage'
+import { CompaniesPage } from '@/pages/property/companies/CompaniesPage'
+import { CompanyDetailPage } from '@/pages/property/companies/CompanyDetailPage'
+import { NoticesPage } from '@/pages/property/notices/NoticesPage'
+import { PermissionsPage } from '@/pages/property/PermissionsPage'
 import { MaintenancePage } from '@/pages/property/service/MaintenancePage'
 import { SatisfactionPage } from '@/pages/property/service/SatisfactionPage'
 import { WorkOrdersPage } from '@/pages/property/work-orders/WorkOrdersPage'
-
-/** 占位页:各阶段逐步替换为正式页面(见 PROGRESS.md) */
-function Stub({ title }: { title: string }) {
-  return (
-    <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">
-      「{title}」页面建设中,后续阶段实现。
-    </div>
-  )
-}
 
 function App() {
   return (
@@ -62,14 +68,14 @@ function App() {
         <Route path="internal/meters" element={<MetersPage />} />
         <Route path="internal/tasks" element={<TasksPage />} />
         {/* 通知 / 企业档案 / 权限 */}
-        <Route path="notices" element={<Stub title="通知管理" />} />
-        <Route path="companies" element={<Stub title="企业档案" />} />
-        <Route path="companies/:companyId" element={<Stub title="企业详情" />} />
+        <Route path="notices" element={<NoticesPage />} />
+        <Route path="companies" element={<CompaniesPage />} />
+        <Route path="companies/:companyId" element={<CompanyDetailPage />} />
         <Route
           path="permissions"
           element={
             <RequireRole roles={['supervisor']}>
-              <Stub title="权限设置" />
+              <PermissionsPage />
             </RequireRole>
           }
         />
@@ -85,17 +91,17 @@ function App() {
         }
       >
         <Route index element={<Navigate to="home" replace />} />
-        <Route path="home" element={<Stub title="企业首页" />} />
-        <Route path="work-orders" element={<Stub title="报事报修" />} />
-        <Route path="work-orders/new" element={<Stub title="发起报修" />} />
-        <Route path="work-orders/:id" element={<Stub title="工单详情" />} />
-        <Route path="complaints/new" element={<Stub title="发起投诉" />} />
-        <Route path="complaints/:id" element={<Stub title="投诉详情" />} />
-        <Route path="bills" element={<Stub title="账单与缴费" />} />
-        <Route path="invoices" element={<Stub title="发票查询" />} />
-        <Route path="survey" element={<Stub title="满意度调研" />} />
-        <Route path="chat" element={<Stub title="AI 咨询" />} />
-        <Route path="profile" element={<Stub title="企业信息" />} />
+        <Route path="home" element={<CompanyHomePage />} />
+        <Route path="work-orders" element={<CompanyWorkOrdersPage />} />
+        <Route path="work-orders/new" element={<NewWorkOrderPage />} />
+        <Route path="work-orders/:id" element={<CompanyWorkOrderDetailPage />} />
+        <Route path="complaints/new" element={<NewComplaintPage />} />
+        <Route path="complaints/:id" element={<CompanyComplaintDetailPage />} />
+        <Route path="bills" element={<CompanyBillsPage />} />
+        <Route path="invoices" element={<CompanyInvoicesPage />} />
+        <Route path="survey" element={<CompanySurveyPage />} />
+        <Route path="chat" element={<CompanyChatPage />} />
+        <Route path="profile" element={<CompanyProfilePage />} />
       </Route>
 
       <Route path="*" element={<NotFoundPage />} />

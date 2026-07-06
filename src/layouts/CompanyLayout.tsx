@@ -24,6 +24,7 @@ import {
 import { PARK_NAME } from '@/data/constants'
 import { useAppStore } from '@/data/store'
 import { roleHome } from '@/lib/nav'
+import { FollowUpNoticeDialog } from '@/pages/company/FollowUpNoticeDialog'
 
 const TABS = [
   { to: '/company/home', label: '首页', icon: Home, match: ['/company/home'] },
@@ -135,6 +136,8 @@ export function CompanyLayout() {
       <main className="mx-auto w-full max-w-4xl space-y-4 p-4">
         <Outlet />
       </main>
+      {/* 收款跟进提醒(弱化版缴费提醒):物业发起跟进后,企业进入即弹一次 */}
+      <FollowUpNoticeDialog />
     </div>
   )
 }
