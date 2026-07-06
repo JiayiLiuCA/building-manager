@@ -44,8 +44,14 @@ export const BUILDINGS: Building[] = [
 ]
 
 // ===== 企业显式定义(30 家;占位/面积/习惯全部确定,长尾字段由 PRNG 派生)=====
-/** 欠费画像:story2=当月全欠(故事②) story3=欠 5、6 两月(故事③) twoMonths=欠 5、6 两月 currentMonth=仅当月未缴 */
-export type ArrearsPattern = 'story2' | 'story3' | 'twoMonths' | 'currentMonth'
+/**
+ * 欠费画像:
+ * story2 = 当月物业费+电费未缴(故事②,其余当月账单已缴)
+ * story3 = 5、6 两月全部未缴(故事③)
+ * pastTwoMonths = 4、5 两月挂账未缴,当月已按习惯缴清(历史欠费户)
+ * currentMonth = 仅当月全部未缴(未到习惯付款日 / 无习惯记录)
+ */
+export type ArrearsPattern = 'story2' | 'story3' | 'pastTwoMonths' | 'currentMonth'
 
 export interface CompanyDef {
   id: string
@@ -83,14 +89,14 @@ export const COMPANY_DEFS: CompanyDef[] = [
   { id: 'C-15', name: '卓立仪器', industry: '精密仪器', buildingId: 'B2', floors: [2], unitLabel: '2 层', areaSqm: 900, habit: { payDay: 5, method: 'transfer' } },
   { id: 'C-16', name: '天工模具', industry: '模具加工', buildingId: 'B2', floors: [5], unitLabel: '5 层', areaSqm: 700, habit: { payDay: 3, method: 'online' } },
   { id: 'C-17', name: '明诚检测', industry: '第三方检测', buildingId: 'B2', floors: [6], unitLabel: '6 层', areaSqm: 600, habit: { payDay: 2, method: 'transfer' } },
-  { id: 'C-18', name: '泰达仓储', industry: '仓储服务', buildingId: 'B4', floors: [1, 2], unitLabel: '1-2 层', areaSqm: 1400, habit: { payDay: 15, method: 'transfer' }, arrears: 'twoMonths' },
+  { id: 'C-18', name: '泰达仓储', industry: '仓储服务', buildingId: 'B4', floors: [1, 2], unitLabel: '1-2 层', areaSqm: 1400, habit: { payDay: 4, method: 'transfer' }, arrears: 'pastTwoMonths' },
   { id: 'C-19', name: '汇金融资租赁', industry: '融资租赁', buildingId: 'B4', floors: [3], unitLabel: '3 层', areaSqm: 500, habit: { payDay: 4, method: 'transfer' } },
   { id: 'C-20', name: '蓝鲸软件', industry: '企业软件', buildingId: 'B4', floors: [4], unitLabel: '4 层', areaSqm: 700, habit: { payDay: 5, method: 'online' } },
   { id: 'C-21', name: '尚品包装', industry: '包装印刷', buildingId: 'B4', floors: [5], unitLabel: '5 层', areaSqm: 600, arrears: 'currentMonth' },
   // ---- C 区(9 家:C2/C3/C4 整栋,C1 多户)----
-  { id: 'C-22', name: '合信律师事务所', industry: '法律服务', buildingId: 'C2', areaSqm: 4000, habit: { payDay: 3, method: 'transfer' } },
-  { id: 'C-23', name: '橙叙文化传媒', industry: '文化传媒', buildingId: 'C3', areaSqm: 4200, habit: { payDay: 5, method: 'transfer' } },
-  { id: 'C-24', name: '星野健身', industry: '体育健身', buildingId: 'C4', areaSqm: 3800, habit: { payDay: 4, method: 'online' } },
+  { id: 'C-22', name: '合信律师事务所', industry: '法律服务', buildingId: 'C2', areaSqm: 5200, habit: { payDay: 3, method: 'transfer' } },
+  { id: 'C-23', name: '橙叙文化传媒', industry: '文化传媒', buildingId: 'C3', areaSqm: 5400, habit: { payDay: 5, method: 'transfer' } },
+  { id: 'C-24', name: '星野健身', industry: '体育健身', buildingId: 'C4', areaSqm: 4600, habit: { payDay: 4, method: 'online' } },
   { id: 'C-25', name: '洄澜餐饮管理', industry: '餐饮连锁', buildingId: 'C1', floors: [1], unitLabel: '1 层 101-104', areaSqm: 1200, habit: { payDay: 28, method: 'cheque', note: '习惯月末支票付款' }, arrears: 'story3' },
   { id: 'C-26', name: '优选生活超市', industry: '零售商超', buildingId: 'C1', floors: [2], unitLabel: '2 层', areaSqm: 800, habit: { payDay: 2, method: 'online' } },
   { id: 'C-27', name: '悦读书吧', industry: '文化零售', buildingId: 'C1', floors: [3], unitLabel: '3 层', areaSqm: 500, habit: { payDay: 5, method: 'transfer' } },
@@ -154,7 +160,7 @@ export const VA_CONTRACT_DEFS: VaContractDef[] = [
   { id: 'VA-04', companyId: 'C-22', type: 'asset_ops', name: 'C2 栋闲置层代租运营', monthlyAmount: 32000, start: '2025-03', end: '2027-02' },
   { id: 'VA-05', companyId: 'C-04', type: 'asset_ops', name: '实验楼配套资产托管', monthlyAmount: 26000, start: '2025-06', end: '2027-05' },
   { id: 'VA-06', companyId: 'C-12', type: 'asset_ops', name: '园区仓储场地联合运营', monthlyAmount: 45000, start: '2024-11', end: '2026-10' },
-  { id: 'VA-07', companyId: 'C-25', type: 'retail', name: '园区餐饮联营(洄澜档口)', monthlyAmount: 12000, start: '2025-05', end: '2026-12' },
+  { id: 'VA-07', companyId: 'C-25', type: 'retail', name: '园区餐饮联营(洄澜档口)', monthlyAmount: 8000, start: '2025-05', end: '2026-12' },
   { id: 'VA-08', companyId: 'C-28', type: 'retail', name: '便利店联营分成', monthlyAmount: 6500, start: '2025-02', end: '2027-01' },
   { id: 'VA-09', companyId: 'C-29', type: 'retail', name: '咖啡外摆点位租赁', monthlyAmount: 3800, start: '2025-08', end: '2026-07' },
 ]

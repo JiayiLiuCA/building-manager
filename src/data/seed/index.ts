@@ -1,26 +1,32 @@
 import { mulberry32 } from '../../lib/prng'
 import type { AppData } from '../types'
-import { ACCOUNTS, STAFF } from './constants'
+import { ACCOUNTS, BUILDINGS, PARK, STAFF, ZONES } from './constants'
 import {
   assignComplaintIds,
   assignWorkOrderIds,
-  buildProfiles,
-  buildServiceTasks,
+  buildCompanies,
+  buildCsAssignments,
+  buildParkingPlans,
+  buildVaContracts,
   genBills,
   genFillerComplaints,
   genFillerWorkOrders,
-  genSpaces,
-  markFillerVacants,
+  genInspections,
+  genInvoices,
+  genMaintenance,
+  genMeterReadings,
+  genSurveys,
+  genTargets,
+  genWorkTasks,
 } from './generators'
 import {
-  applyStoryIdentities,
   buildStoryComplaints,
-  buildStoryDunningRecords,
-  buildStoryResidents,
+  buildStoryFollowUps,
+  buildStoryNotices,
   buildStoryWorkOrders,
-  STORY_ID_SET,
-  storyPayProfiles,
-} from './storyHouseholds'
+  WAIVER_DEFS,
+} from './storyCompanies'
+import { STORY_COMPANY_IDS } from './constants'
 
 /**
  * 组装完整初始数据。固定种子 → 每次构建结果完全一致;
@@ -29,45 +35,62 @@ import {
 export function buildSeedData(): AppData {
   const rng = mulberry32(20260606)
 
-  // 1. 空间结构 + 户(含随机业主身份)
-  const { communities, buildings, units, households, parkingMap } = genSpaces(rng)
+  // 1. 企业与车位、客服分配、增值合同
+  const companies = buildCompanies(rng)
+  const parkingPlans = buildParkingPlans(rng)
+  const csAssignments = buildCsAssignments(companies)
+  const valueAddedContracts = buildVaContracts()
 
-  // 2. 故事户身份与状态覆写、filler 空置户
-  applyStoryIdentities(households, parkingMap)
-  markFillerVacants(households, rng, STORY_ID_SET)
+  // 2. 减免 → 12 个月四费类账单(账单存减免后净额)→ 收费目标
+  const waivers = [...WAIVER_DEFS]
+  const { bills } = genBills(companies, parkingPlans, valueAddedContracts, waivers, rng)
+  const revenueTargets = genTargets(bills, rng)
 
-  // 3. 缴费画像 → 12 个月账单
-  const { profiles, arrearsFillerIds } = buildProfiles(households, rng, storyPayProfiles(), STORY_ID_SET)
-  const bills = genBills(households, profiles, parkingMap, rng)
-
-  // 4. 工单(故事 + filler)→ 按报修日期统一编号
-  const storyWos = buildStoryWorkOrders()
-  const fillerWos = genFillerWorkOrders(households, rng, STORY_ID_SET, arrearsFillerIds)
+  // 3. 工单(故事 + filler)→ 按报修日期统一编号
+  const storyWos = buildStoryWorkOrders(companies, rng)
+  const fillerWos = genFillerWorkOrders(companies, rng, new Set(Object.values(STORY_COMPANY_IDS)))
   const workOrders = assignWorkOrderIds([...Object.values(storyWos), ...fillerWos])
 
-  // 5. 投诉(故事投诉引用已编号的工单 id)
+  // 4. 投诉(故事投诉引用已编号的工单 id)
   const complaints = assignComplaintIds([
-    ...buildStoryComplaints(storyWos),
-    ...genFillerComplaints(households, rng, STORY_ID_SET, arrearsFillerIds),
+    ...buildStoryComplaints(companies, storyWos),
+    ...genFillerComplaints(companies, rng, new Set(Object.values(STORY_COMPANY_IDS))),
   ])
 
-  // 6. 催缴记录、空置待办、业主账号实体
-  const dunningRecords = buildStoryDunningRecords(bills)
-  const serviceTasks = buildServiceTasks(households)
-  const residents = buildStoryResidents()
+  // 5. 维保 / 巡检 / 核抄 / 任务(内控与服务品质)
+  const maintenanceOrders = genMaintenance(rng)
+  const inspections = genInspections(rng)
+  const meterReadings = genMeterReadings(rng)
+  const workTasks = genWorkTasks()
+
+  // 6. 调研 / 发票 / 通知 / 收款跟进历史
+  const { surveys, responses: surveyResponses } = genSurveys(companies, rng)
+  const invoices = genInvoices(companies, bills, rng)
+  const notices = buildStoryNotices(storyWos.plazaRepair.id)
+  const followUpRecords = buildStoryFollowUps()
 
   return {
-    communities,
-    buildings,
-    units,
-    households,
-    residents,
+    park: PARK,
+    zones: ZONES,
+    buildings: BUILDINGS,
+    companies,
     staff: STAFF,
     accounts: ACCOUNTS,
+    csAssignments,
     bills,
+    waivers,
+    revenueTargets,
+    valueAddedContracts,
     workOrders,
     complaints,
-    dunningRecords,
-    serviceTasks,
+    maintenanceOrders,
+    inspections,
+    meterReadings,
+    workTasks,
+    notices,
+    invoices,
+    surveys,
+    surveyResponses,
+    followUpRecords,
   }
 }
