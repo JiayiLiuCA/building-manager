@@ -4,6 +4,8 @@ import { PropertyLayout } from '@/layouts/PropertyLayout'
 import { RequireRole, RootRedirect } from '@/layouts/RequireRole'
 import { LoginPage } from '@/pages/LoginPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+import { DailyReportPage } from '@/pages/property/DailyReportPage'
+import { DashboardPage } from '@/pages/property/DashboardPage'
 
 /** 占位页:各阶段逐步替换为正式页面(见 PROGRESS.md) */
 function Stub({ title }: { title: string }) {
@@ -30,8 +32,8 @@ function App() {
         }
       >
         <Route index element={<Navigate to="dashboard" replace />} />
-        <Route path="dashboard" element={<Stub title="驾驶舱" />} />
-        <Route path="daily-report" element={<Stub title="日报" />} />
+        <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="daily-report" element={<DailyReportPage />} />
         {/* 经营管理 */}
         <Route path="revenue/property" element={<Stub title="物业服务收费" />} />
         <Route path="revenue/property/:zoneId" element={<Stub title="物业服务收费 · 区" />} />
