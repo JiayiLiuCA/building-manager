@@ -2,10 +2,11 @@ import { Compass } from 'lucide-react'
 import { Link } from 'react-router'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/data/store'
+import { roleHome } from '@/lib/nav'
 
 export function NotFoundPage() {
   const currentUser = useAppStore((s) => s.currentUser)
-  const home = !currentUser ? '/login' : currentUser.role === 'property' ? '/property/dashboard' : '/resident/payments'
+  const home = !currentUser ? '/login' : roleHome(currentUser.role)
   return (
     <div className="flex min-h-svh flex-col items-center justify-center gap-4 p-6 text-center">
       <Compass className="size-12 text-muted-foreground/40" />

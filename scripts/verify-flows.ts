@@ -2,7 +2,7 @@
 // 运行:npx tsx scripts/verify-flows.ts
 import { useAppStore } from '../src/data/store'
 import { getArrears } from '../src/data/selectors/billingSelectors'
-import { deriveComplaintStatus, isSupervisorInvolved } from '../src/data/selectors/complaintSelectors'
+import { deriveComplaintStatus } from '../src/data/selectors/complaintSelectors'
 import { getDashboardKpis } from '../src/data/selectors/dashboardSelectors'
 import { buildDailyReport } from '../src/data/selectors/dailyReportSelectors'
 import { getActiveFollowUpForCompany, getFollowUpSuggestion } from '../src/data/selectors/followUpSelectors'

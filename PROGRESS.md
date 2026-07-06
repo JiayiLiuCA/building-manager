@@ -16,7 +16,7 @@
 | S0 | 工作区与文档(克隆/依赖/REFACTOR_PLAN/需求入库/PROGRESS) | ✅ 完成 |
 | S1 | 契约与工具层(types/constants/statusMaps/id/period/seed 配置骨架) | ✅ 完成 |
 | S2 | seed 全量重写 + verify:seed 第一版 | ✅ 完成 |
-| S3 | selectors + store 重写,verify 两脚本绿 | ⬜ |
+| S3 | selectors + store 重写,verify 两脚本绿 | ✅ 完成 |
 | S4 | 骨架(路由/守卫/两 layout/登录页),tsc 首绿 | ⬜ |
 | S5 | 驾驶舱 + 日报 | ⬜ |
 | S6 | 经营管理四页(含下钻) | ⬜ |
@@ -27,6 +27,13 @@
 | S11 | 收尾(smoke/README/lint/build/验收清单) | ⬜ |
 
 ## 阶段记录
+
+### S3(2026-07-05)
+
+- `selectors/scope.ts` 权限唯一入口;**口径决策:园区级临停账单仅主管可见**(保证"客服每个财务数字=名下企业聚合"的可加性),公共工单物业两角色可见、企业端不可见。
+- 12 个 selector 域全部重写/新增;store 重写为 6 账号会话 + 32 动作(未按域拆文件:动作体量 ~700 行可控,保持单文件便于检索)。
+- chatRules 园区语境重写(store 依赖,提前于 S10)。
+- `verify:seed` 扩至 94 条断言(三视角一致性/楼栋表口径/四费类=驾驶舱实收/三色摆位/权限隔离/日报口径);`verify:flows` 重写为 10 条链路,全绿。
 
 ### S2(2026-07-05)
 

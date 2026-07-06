@@ -7,15 +7,23 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { SYSTEM_NAME } from '@/data/constants'
+import { PARK_NAME, SYSTEM_NAME } from '@/data/constants'
+import { roleHome } from '@/lib/nav'
 import { useAppStore } from '@/data/store'
-import type { Role } from '@/data/types'
 
-const DEMO_ACCOUNTS: Record<Role, { username: string; label: string }[]> = {
-  property: [{ username: 'admin', label: '物业管理员 admin' }],
-  resident: [
-    { username: 'zhangwei', label: '业主 张伟' },
-    { username: 'liqiang', label: '业主 李强' },
+/** 登录页按「端」分组展示演示账号(物业端含主管与客服两种角色) */
+type Side = 'property' | 'company'
+
+const DEMO_ACCOUNTS: Record<Side, { username: string; label: string }[]> = {
+  property: [
+    { username: 'admin', label: '主管 陈志远' },
+    { username: 'cs_wang', label: '客服 王琳(A/B 区)' },
+    { username: 'cs_liu', label: '客服 刘洋(C 区)' },
+  ],
+  company: [
+    { username: 'company1', label: '企业① 云脉智能科技' },
+    { username: 'company2', label: '企业② 精工精密制造' },
+    { username: 'company3', label: '企业③ 洄澜餐饮管理' },
   ],
 }
 
@@ -25,13 +33,13 @@ export function LoginPage() {
   const accounts = useAppStore((s) => s.accounts)
   const login = useAppStore((s) => s.login)
 
-  const [role, setRole] = useState<Role>('property')
+  const [side, setSide] = useState<Side>('property')
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
   if (currentUser) {
-    return <Navigate to={currentUser.role === 'property' ? '/property/dashboard' : '/resident/payments'} replace />
+    return <Navigate to={roleHome(currentUser.role)} replace />
   }
 
   const fill = (name: string) => {
@@ -47,7 +55,7 @@ export function LoginPage() {
       setError('用户名或密码错误,请重试(演示密码均为 123456)')
       return
     }
-    navigate(account?.role === 'resident' ? '/resident/payments' : '/property/dashboard', { replace: true })
+    navigate(account ? roleHome(account.role) : '/login', { replace: true })
   }
 
   return (
@@ -58,13 +66,13 @@ export function LoginPage() {
             <Building2 className="size-6" />
           </div>
           <CardTitle className="text-2xl">{SYSTEM_NAME}</CardTitle>
-          <CardDescription>智慧物业经营管理平台 · 演示环境</CardDescription>
+          <CardDescription>{PARK_NAME} · 产业园经营管理平台 · 演示环境</CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={role} onValueChange={(v) => setRole(v as Role)}>
+          <Tabs value={side} onValueChange={(v) => setSide(v as Side)}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="property">物业端</TabsTrigger>
-              <TabsTrigger value="resident">业主端</TabsTrigger>
+              <TabsTrigger value="company">企业端</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -99,7 +107,7 @@ export function LoginPage() {
           <div className="mt-5 border-t pt-4">
             <p className="mb-2 text-xs text-muted-foreground">演示账号(点击一键填入,密码均为 123456):</p>
             <div className="flex flex-wrap gap-2">
-              {DEMO_ACCOUNTS[role].map((a) => (
+              {DEMO_ACCOUNTS[side].map((a) => (
                 <Badge
                   key={a.username}
                   variant="outline"
