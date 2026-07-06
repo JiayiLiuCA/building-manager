@@ -6,6 +6,18 @@ import { LoginPage } from '@/pages/LoginPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { DailyReportPage } from '@/pages/property/DailyReportPage'
 import { DashboardPage } from '@/pages/property/DashboardPage'
+import { InspectionsPage } from '@/pages/property/internal/InspectionsPage'
+import { MetersPage } from '@/pages/property/internal/MetersPage'
+import { TasksPage } from '@/pages/property/internal/TasksPage'
+import { RevenuePropertyBuildingPage } from '@/pages/property/revenue/RevenuePropertyBuildingPage'
+import { RevenuePropertyPage } from '@/pages/property/revenue/RevenuePropertyPage'
+import { RevenuePropertyZonePage } from '@/pages/property/revenue/RevenuePropertyZonePage'
+import { RevenueUtilityPage } from '@/pages/property/revenue/RevenueUtilityPage'
+import { RevenueValueAddedPage } from '@/pages/property/revenue/RevenueValueAddedPage'
+import { RevenueVehiclePage } from '@/pages/property/revenue/RevenueVehiclePage'
+import { MaintenancePage } from '@/pages/property/service/MaintenancePage'
+import { SatisfactionPage } from '@/pages/property/service/SatisfactionPage'
+import { WorkOrdersPage } from '@/pages/property/work-orders/WorkOrdersPage'
 
 /** 占位页:各阶段逐步替换为正式页面(见 PROGRESS.md) */
 function Stub({ title }: { title: string }) {
@@ -35,20 +47,20 @@ function App() {
         <Route path="dashboard" element={<DashboardPage />} />
         <Route path="daily-report" element={<DailyReportPage />} />
         {/* 经营管理 */}
-        <Route path="revenue/property" element={<Stub title="物业服务收费" />} />
-        <Route path="revenue/property/:zoneId" element={<Stub title="物业服务收费 · 区" />} />
-        <Route path="revenue/property/:zoneId/:buildingId" element={<Stub title="物业服务收费 · 楼栋" />} />
-        <Route path="revenue/vehicle" element={<Stub title="车辆服务收费" />} />
-        <Route path="revenue/utility" element={<Stub title="水电能耗收费" />} />
-        <Route path="revenue/value-added" element={<Stub title="增值服务收入" />} />
+        <Route path="revenue/property" element={<RevenuePropertyPage />} />
+        <Route path="revenue/property/:zoneId" element={<RevenuePropertyZonePage />} />
+        <Route path="revenue/property/:zoneId/:buildingId" element={<RevenuePropertyBuildingPage />} />
+        <Route path="revenue/vehicle" element={<RevenueVehiclePage />} />
+        <Route path="revenue/utility" element={<RevenueUtilityPage />} />
+        <Route path="revenue/value-added" element={<RevenueValueAddedPage />} />
         {/* 服务品质 */}
-        <Route path="service/work-orders" element={<Stub title="维修工单" />} />
-        <Route path="service/maintenance" element={<Stub title="维保工单" />} />
-        <Route path="service/satisfaction" element={<Stub title="客户满意度" />} />
+        <Route path="service/work-orders" element={<WorkOrdersPage />} />
+        <Route path="service/maintenance" element={<MaintenancePage />} />
+        <Route path="service/satisfaction" element={<SatisfactionPage />} />
         {/* 内控管理 */}
-        <Route path="internal/inspections" element={<Stub title="日常巡检" />} />
-        <Route path="internal/meters" element={<Stub title="能耗核抄" />} />
-        <Route path="internal/tasks" element={<Stub title="工作任务清单" />} />
+        <Route path="internal/inspections" element={<InspectionsPage />} />
+        <Route path="internal/meters" element={<MetersPage />} />
+        <Route path="internal/tasks" element={<TasksPage />} />
         {/* 通知 / 企业档案 / 权限 */}
         <Route path="notices" element={<Stub title="通知管理" />} />
         <Route path="companies" element={<Stub title="企业档案" />} />
