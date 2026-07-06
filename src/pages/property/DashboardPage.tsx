@@ -1,7 +1,7 @@
 import { ChevronDown, CircleAlert, CircleCheck, ClipboardList, Percent, Smile, Wallet, Wrench } from 'lucide-react'
 import { Fragment, useMemo } from 'react'
 import { Link } from 'react-router'
-import { Bar, BarChart, CartesianGrid, LabelList, Line, LineChart, XAxis, YAxis } from 'recharts'
+import { Bar, BarChart, CartesianGrid, ComposedChart, LabelList, Line, XAxis, YAxis } from 'recharts'
 import { AiSummaryCard } from '@/components/shared/AiSummaryCard'
 import { ChartCard } from '@/components/shared/ChartCard'
 import { KpiCard } from '@/components/shared/KpiCard'
@@ -176,16 +176,16 @@ export function DashboardPage() {
           }
         >
           <ChartContainer config={trendConfig} className="h-full w-full">
-            <LineChart data={trend} margin={{ top: 22, left: 12, right: 12 }}>
+            <ComposedChart data={trend} margin={{ top: 22, left: 12, right: 12 }}>
               <CartesianGrid vertical={false} strokeDasharray="3 3" />
               <XAxis dataKey="month" tickFormatter={monthTick} tickLine={false} axisLine={false} fontSize={11} />
               <YAxis tickFormatter={moneyLabel} tickLine={false} axisLine={false} fontSize={11} width={52} />
               <ChartTooltip content={<ChartTooltipContent />} />
-              <Line dataKey="receivable" stroke="var(--color-receivable)" strokeWidth={2} dot={false} />
-              <Line dataKey="received" stroke="var(--color-received)" strokeWidth={2} dot={{ r: 2.5 }}>
+              <Bar dataKey="received" fill="var(--color-received)" radius={4} maxBarSize={26}>
                 <LabelList dataKey="received" position="top" formatter={moneyLabelFormatter} className="fill-foreground" fontSize={9} />
-              </Line>
-            </LineChart>
+              </Bar>
+              <Line dataKey="receivable" stroke="var(--color-receivable)" strokeWidth={2} dot={{ r: 2 }} />
+            </ComposedChart>
           </ChartContainer>
         </ChartCard>
 
