@@ -15,6 +15,7 @@ import { NewComplaintPage } from '@/pages/company/NewComplaintPage'
 import { NewWorkOrderPage } from '@/pages/company/NewWorkOrderPage'
 import { LoginPage } from '@/pages/LoginPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+import { QuotationPage } from '@/pages/QuotationPage'
 import { DailyReportPage } from '@/pages/property/DailyReportPage'
 import { DashboardPage } from '@/pages/property/DashboardPage'
 import { InspectionsPage } from '@/pages/property/internal/InspectionsPage'
@@ -39,6 +40,8 @@ function App() {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/" element={<RootRedirect />} />
+      {/* 项目报价单(隐藏路由:不进任何导航,直接输入 URL 访问) */}
+      <Route path="/quotation" element={<QuotationPage />} />
 
       {/* 物业端(主管 + 客服) */}
       <Route
