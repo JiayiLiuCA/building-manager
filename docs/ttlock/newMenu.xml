@@ -1,0 +1,321 @@
+<?html version="1.0" encoding="UTF-8"?>
+<root>
+	<group name="开发指南" key="userGuide">
+		<item name="如何开始对接" file="userGuide/getStarted.html"></item>
+		<item name="APP开锁（电子钥匙）" file="userGuide/ekey.html"></item>
+		<item name="密码开锁" file="userGuide/passcode.html"></item>
+		<item name="酒店发卡器发卡" file="userGuide/hotelCard.html"></item>
+		<item name="微信小程序对接" file="userGuide/wechat.html"></item>
+		<item name="支付宝小程序对接" file="userGuide/Alipay.html"></item>
+		<item name="远程开锁（网关）" file="userGuide/gateway.html"></item>
+		<item name="远程开锁（WiFi锁）" file="userGuide/wifiLock.html"></item>
+		<item name="水电表对接" file="userGuide/waterAndEletricMeter.html"></item>
+		<item name="开锁记录" file="userGuide/lockRecord.html"></item>
+		<item name="本地化对接" file="userGuide/onPremise.html"></item>
+		<item name="三方设备对接" file="userGuide/Third-party.html"></item>
+		<item name="TTLock n8n" file="userGuide/TTlockn8n.html"></item>
+
+	</group>
+	<group name="Cloud API V3" key="cloud">
+		<item name="错误码" file="cloud/errorCode.html"></item>
+		<item name="获取和刷新访问令牌" key="oauth2">
+			<item name="获取访问令牌" file="cloud/oauth2/getAccessToken.html"></item>
+			<item name="刷新访问令牌" file="cloud/oauth2/refreshAccessToken.html"></item>
+		</item>
+		<item name="用户相关接口" key="user">
+			<item name="新用户注册" file="cloud/user/register.html"></item>
+			<item name="用户重置密码" file="cloud/user/resetPassword.html"></item>
+			<item name="获取用户列表" file="cloud/user/list.html"></item>
+			<item name="删除用户" file="cloud/user/delete.html"></item>
+		</item>
+		<item name="锁相关接口" key="lock">
+			<item name="锁初始化" file="cloud/lock/initialize.html"></item>
+			<item name="获取名下锁列表" file="cloud/lock/list.html"></item>
+			<item name="获取锁详细信息" file="cloud/lock/detail.html"></item>
+			<item name="删除锁" file="cloud/lock/delete.html"></item>
+			<item name="更新锁数据" file="cloud/lock/updateLockData.html"></item>
+			<item name="修改锁名称" file="cloud/lock/rename.html"></item>
+			<item name="修改锁管理员键盘密码" file="cloud/lock/updateAdminPasscode.html"></item>
+			<item name="转移锁" file="cloud/lock/transfer.html"></item>
+			<item name="上传锁电量" file="cloud/lock/updateElectricQuantity.html"></item>
+			<item name="设置自动闭锁时间" file="cloud/lock/setAutoLockTime.html"></item>
+			<item name="设置常开模式" file="cloud/lock/configurePassageMode.html"></item>
+			<item name="获取常开模式设置" file="cloud/lock/getPassageModeConfiguration.html"></item>
+			<item name="设置酒店卡扇区" file="cloud/lock/setHotelCardSector.html"></item>
+			<item name="修改锁设置项" file="cloud/lock/updateSetting.html"></item>
+			<item name="查询锁设置项" file="cloud/lock/querySetting.html"></item>
+			<item name="获取锁工作时间" file="cloud/lock/getWorkingMode.html"></item>
+			<item name="设置锁工作时间" file="cloud/lock/configWorkingMode.html"></item>
+		</item>
+		<item name="电子钥匙相关接口" key="ekey">
+			<item name="发送钥匙" file="cloud/ekey/send.html"></item>
+			<item name="获取名下钥匙列表" file="cloud/ekey/list.html"></item>
+			<item name="获取单把钥匙" file="cloud/ekey/get.html"></item>
+			<item name="获取锁的钥匙列表" file="cloud/ekey/listByLock.html"></item>
+			<item name="删除钥匙" file="cloud/ekey/delete.html"></item>
+			<item name="冻结钥匙" file="cloud/ekey/freeze.html"></item>
+			<item name="解除冻结钥匙" file="cloud/ekey/unfreeze.html"></item>
+			<item name="修改钥匙" file="cloud/ekey/modify.html"></item>
+			<item name="修改钥匙有效期" file="cloud/ekey/updateDate.html"></item>
+			<item name="钥匙管理员授权" file="cloud/ekey/authorize.html"></item>
+			<item name="解除钥匙管理员授权" file="cloud/ekey/unauthorize.html"></item>
+			<item name="获取钥匙开锁链接" file="cloud/ekey/getUnlockLink.html"></item>
+		</item>
+		<item name="密码相关接口" key="passcode">
+			<item name="获取随机密码" file="cloud/passcode/get.html"></item>
+			<item name="添加自定义密码" file="cloud/passcode/add.html"></item>
+			<item name="获取锁的密码列表" file="cloud/passcode/list.html"></item>
+			<item name="删除密码" file="cloud/passcode/delete.html"></item>
+			<item name="修改密码" file="cloud/passcode/update.html"></item>
+		</item>
+		<item name="网关相关接口" key="gateway">
+			<item name="开锁" file="cloud/gateway/unlock.html"></item>
+			<item name="闭锁" file="cloud/gateway/lock.html"></item>
+			<item name="查询锁的开关状态" file="cloud/gateway/queryLockOpenState.html"></item>
+			<item name="读取锁时间" file="cloud/gateway/queryLockDatetime.html"></item>
+			<item name="校准锁时间" file="cloud/gateway/adjustLockDatetime.html"></item>
+			<item name="查询锁电量" file="cloud/gateway/queryLockElectricQuantity.html"></item>
+			<item name="获取名下网关列表" file="cloud/gateway/list.html"></item>
+			<item name="删除网关" file="cloud/gateway/delete.html"></item>
+			<item name="网关重命名" file="cloud/gateway/rename.html"></item>
+			<item name="转移网关" file="cloud/gateway/transfer.html"></item>
+			<item name="获取锁连接的网关列表" file="cloud/gateway/listByLock.html"></item>
+			<item name="获取网关管理的锁列表" file="cloud/gateway/listLock.html"></item>
+			<item name="获取网关详细信息" file="cloud/gateway/detail.html"></item>
+			<item name="查询某网关是否初始化成功" file="cloud/gateway/isInitSuccess.html"></item>
+			<item name="上传网关信息" file="cloud/gateway/uploadDetail.html"></item>
+			<item name="检测网关固件是否需要升级" file="cloud/gateway/checkUpgrade.html"></item>
+			<item name="设置网关进入升级模式" file="cloud/gateway/setIntoUpgradeMode.html"></item>
+			<item name="获取网关连接的设备列表" file="cloud/gateway/listDevice.html"></item>
+		</item>
+		<item name="IC卡相关接口" key="card">
+			<item name="添加IC卡" file="cloud/card/add.html"></item>
+			<item name="获取锁名下IC卡列表" file="cloud/card/list.html"></item>
+			<item name="删除IC卡" file="cloud/card/delete.html"></item>
+			<item name="修改IC卡有效期" file="cloud/card/update.html"></item>
+			<item name="清空IC卡" file="cloud/card/clear.html"></item>
+			<item name="IC卡重命名" file="cloud/card/rename.html"></item>
+		</item>
+		<item name="指纹相关接口" key="fingerprint">
+			<item name="添加指纹" file="cloud/fingerprint/add.html"></item>
+			<item name="获取锁名下指纹列表" file="cloud/fingerprint/list.html"></item>
+			<item name="删除指纹" file="cloud/fingerprint/delete.html"></item>
+			<item name="修改指纹有效期" file="cloud/fingerprint/update.html"></item>
+			<item name="清空指纹" file="cloud/fingerprint/clear.html"></item>
+			<item name="指纹重命名" file="cloud/fingerprint/rename.html"></item>
+		</item>
+		<item name="人脸相关接口" key="face">
+			<item name="获取人脸特征值数据" file="cloud/face/getFeatureData.html"></item>
+			<item name="添加人脸" file="cloud/face/add.html"></item>
+			<item name="获取锁名下人脸列表" file="cloud/face/list.html"></item>
+			<item name="删除人脸" file="cloud/face/delete.html"></item>
+			<item name="修改人脸有效期" file="cloud/face/update.html"></item>
+			<item name="清空人脸" file="cloud/face/clear.html"></item>
+			<item name="人脸重命名" file="cloud/face/rename.html"></item>
+		</item>
+		<item name="锁记录相关接口" key="lockRecord">
+			<item name="获取开锁记录列表" file="cloud/lockRecord/list.html"></item>
+			<item name="上传锁记录" file="cloud/lockRecord/upload.html"></item>
+			<item name="删除锁记录" file="cloud/lockRecord/delete.html"></item>
+			<item name="清空锁记录" file="cloud/lockRecord/clear.html"></item>
+			<item name="锁记录回调通知" file="cloud/lockRecord/notify.html"></item>
+		</item>
+		<item name="分组相关接口" key="group">
+			<item name="添加分组" file="cloud/group/add.html"></item>
+			<item name="获取名下分组列表" file="cloud/group/list.html"></item>
+			<item name="设置锁所属分组" file="cloud/group/setLockGroup.html"></item>
+			<item name="删除分组" file="cloud/group/delete.html"></item>
+			<item name="修改分组名称" file="cloud/group/rename.html"></item>
+			<item name="设置设备所属分组" file="cloud/group/setDeviceGroup.html"></item>
+		</item>
+		<item name="锁固件升级相关接口" key="lockUpgrade">
+			<item name="检测锁固件是否需要升级" file="cloud/lockUpgrade/check.html"></item>
+			<item name="再次检测锁固件是否需要升级" file="cloud/lockUpgrade/recheck.html"></item>
+		</item>
+		<item name="无线键盘相关接口" key="wirelessKeypad">
+			<item name="添加无线键盘" file="cloud/wirelessKeypad/add.html"></item>
+			<item name="获取锁的无线键盘列表" file="cloud/wirelessKeypad/list.html"></item>
+			<item name="删除无线键盘" file="cloud/wirelessKeypad/delete.html"></item>
+			<item name="无线键盘重命名" file="cloud/wirelessKeypad/rename.html"></item>
+			<item name="检查无线键盘是否需要升级" file="cloud/wirelessKeypad/upgrade.html"></item>
+			<item name="无线键盘升级成功" file="cloud/wirelessKeypad/upgradeSuccess.html"></item>
+		</item>
+		<item name="遥控相关接口" key="remote">
+			<item name="添加遥控" file="cloud/remote/add.html"></item>
+			<item name="获取锁的遥控列表" file="cloud/remote/list.html"></item>
+			<item name="删除遥控" file="cloud/remote/delete.html"></item>
+			<item name="清空遥控" file="cloud/remote/clear.html"></item>
+			<item name="更新遥控信息" file="cloud/remote/update.html"></item>
+			<item name="检查遥控是否需要升级" file="cloud/remote/upgrade.html"></item>
+			<item name="遥控升级成功" file="cloud/remote/upgradeSuccess.html"></item>
+		</item>
+		<item name="门磁相关接口" key="doorSensor">
+			<item name="独立门磁相关接口" key="standaloneDoorSensor">
+				<item name="添加门磁" file="cloud/doorSensor/standaloneDoorSensor/add.html"></item>
+				<item name="查询门磁列表" file="cloud/doorSensor/standaloneDoorSensor/list.html"></item>
+				<item name="配置门磁提醒" file="cloud/doorSensor/standaloneDoorSensor/configAlert.html"></item>
+				<item name="配置网络信息" file="cloud/doorSensor/standaloneDoorSensor/configNetwork.html"></item>
+				<item name="查询门磁操作记录" file="cloud/doorSensor/standaloneDoorSensor/listRecord.html"></item>
+				<item name="修改门磁名称" file="cloud/doorSensor/standaloneDoorSensor/update.html"></item>
+				<item name="删除门磁信息" file="cloud/doorSensor/standaloneDoorSensor/delete.html"></item>
+				<item name="分享独立门磁" file="cloud/doorSensor/standaloneDoorSensor/addDoorSensorUser.html"></item>
+				<item name="查询独立门磁被分享的用户列表" file="cloud/doorSensor/standaloneDoorSensor/listDoorSensorUser.html"></item>
+				<item name="删除独立门磁分享的用户" file="cloud/doorSensor/standaloneDoorSensor/deleteDoorSensorUser.html"></item>
+				<!-- <item name="本地化方案校验授权码" file="cloud/doorSensor/standaloneDoorSensor/checkAuthOnPremise.html"></item>
+				<item name="本地化门磁固件是否升级" file="cloud/doorSensor/standaloneDoorSensor/checkUpgradeOnPremise.html"></item> -->
+				<item name="配置独立门磁提醒" file="cloud/doorSensor/standaloneDoorSensor/configAlertFlag.html"></item>
+				<item name="获取独立门磁提醒" file="cloud/doorSensor/standaloneDoorSensor/getAlertFlag.html"></item>
+				<item name="独立门磁记录回调通知" file="cloud/doorSensor/standaloneDoorSensor/notify.html"></item>
+			</item>
+			<item name="添加门磁" file="cloud/doorSensor/add.html"></item>
+			<item name="查询锁的门磁信息" file="cloud/doorSensor/query.html"></item>
+			<item name="删除门磁" file="cloud/doorSensor/delete.html"></item>
+			<item name="更新门磁信息" file="cloud/doorSensor/update.html"></item>
+			<item name="检查门磁是否需要升级" file="cloud/doorSensor/upgrade.html"></item>
+			<item name="门磁升级成功" file="cloud/doorSensor/upgradeSuccess.html"></item>
+			<item name="门磁闭合记录" file="cloud/doorSensor/listRecord.html"></item>
+		</item>
+		<item name="NB-IoT相关接口" key="nb">
+			<item name="NB-IoT锁注册" file="cloud/nb/register.html"></item>
+			<item name="获取锁的NB-Iot设备信息" file="cloud/nb/getDeviceInfo.html"></item>
+			<item name="获取NB-IoT云平台IP和端口" file="cloud/nb/getPlatformIpAndPort.html"></item>
+		</item>
+		<item name="二维码相关接口" key="qrCode">
+			<item name="添加二维码" file="cloud/qrCode/add.html"></item>
+			<item name="获取锁名下二维码列表" file="cloud/qrCode/list.html"></item>
+			<item name="获取二维码数据" file="cloud/qrCode/getData.html"></item>
+			<item name="修改二维码" file="cloud/qrCode/update.html"></item>
+			<item name="删除二维码" file="cloud/qrCode/delete.html"></item>
+			<item name="清空二维码" file="cloud/qrCode/clear.html"></item>
+		</item>
+		<item name="WiFi锁相关接口" key="wifiLock">
+			<item name="上传Wifi锁网络信息" file="cloud/wifiLock/updateNetwork.html"></item>
+			<item name="获取Wifi锁信息" file="cloud/wifiLock/detail.html"></item>
+		</item>
+		<item name="掌静脉相关接口" key="palmVein">
+			<item name="获取锁掌静脉列表" file="cloud/palmVein/getPalmVeinList.html"></item>
+			<item name="添加掌静脉" file="cloud/palmVein/addPalmVein.html"></item>
+			<item name="修改掌静脉名称" file="cloud/palmVein/renamePalmVein.html"></item>
+			<item name="修改掌静脉有效期" file="cloud/palmVein/changePalmVeinPeriod.html"></item>
+			<item name="删除掌静脉" file="cloud/palmVein/deletePalmVein.html"></item>
+			<item name="清空掌静脉" file="cloud/palmVein/clearPalmVein.html"></item>
+		</item>
+		<item name="电表相关接口" key="eletricMeter">
+			<item name="管理员相关接口" key="admin">
+				<!-- <item name="获取分组列表" file="cloud/eletricMeter/admin/listGroup.html"></item>
+				<item name="添加分组" file="cloud/eletricMeter/admin/addGroup.html"></item>
+				<item name="删除分组" file="cloud/eletricMeter/admin/deleteGroup.html"></item>
+				<item name="重命名分组" file="cloud/eletricMeter/admin/renameGroup.html"></item>
+				<item name="操作电表分组" file="cloud/eletricMeter/admin/setGroup.html"></item> -->
+				<item name="获取电表列表" file="cloud/eletricMeter/admin/list.html"></item>
+				<item name="绑定电表" file="cloud/eletricMeter/admin/bind.html"></item>
+				<item name="管理员获得电表详情" file="cloud/eletricMeter/admin/detail.html"></item>
+				<item name="抄表" file="cloud/eletricMeter/admin/syncState.html"></item>
+				<item name="管理员充值" file="cloud/eletricMeter/admin/recharge.html"></item>
+				<item name="修改单价" file="cloud/eletricMeter/admin/updatePrice.html"></item>
+				<item name="操作电表通断电" file="cloud/eletricMeter/admin/controlOnOff.html"></item>
+				<item name="清零电表" file="cloud/eletricMeter/admin/clear.html"></item>
+				<item name="修改电表名称" file="cloud/eletricMeter/admin/rename.html"></item>
+				<item name="操作记录列表" file="cloud/eletricMeter/admin/listOperationRecords.html"></item>
+				<item name="用电记录列表" file="cloud/eletricMeter/admin/listRecords.html"></item>
+				<item name="设置最大功率" file="cloud/eletricMeter/admin/updateMaxPower.html"></item>
+				<item name="设置付费模式" file="cloud/eletricMeter/admin/updatePayMode.html"></item>
+				<item name="检测电表固件是否需要升级" file="cloud/eletricMeter/admin/upgradeCheck.html"></item>
+				<item name="升级成功" file="cloud/eletricMeter/admin/upgradeSuccess.html"></item>
+				<!-- <item name="蓝牙广播抄表" file="cloud/eletricMeter/admin/syncSameAdmin.html"></item> -->
+				<item name="电表关联的网关" file="cloud/eletricMeter/admin/gatewayList.html"></item>
+				<item name="生成可以充值用的executeToken" file="cloud/eletricMeter/admin/createExecuteToken.html"></item>
+				<item name="蓝牙广播抄表" file="cloud/eletricMeter/admin/decodeBleAdvertising.html"></item>
+			</item>
+			<item name="租客相关接口" key="tenant">
+				<item name="租客获取电表详情" file="cloud/eletricMeter/tenant/detail.html"></item>
+				<item name="租客抄表" file="cloud/eletricMeter/tenant/syncState.html"></item>
+				<item name="租客充值" file="cloud/eletricMeter/tenant/recharge.html"></item>
+				<item name="租客查询操作记录" file="cloud/eletricMeter/tenant/listRecharge.html"></item>
+				<item name="租客查询用电记录列表" file="cloud/eletricMeter/tenant/listRecords.html"></item>
+			</item>
+		</item>
+		<item name="水表相关接口" key="waterMeter">
+			<item name="管理员相关接口" key="admin">
+				<!-- <item name="获取分组列表" file="cloud/waterMeter/admin/listGroup.html"></item>
+				<item name="添加分组" file="cloud/waterMeter/admin/addGroup.html"></item>
+				<item name="删除分组" file="cloud/waterMeter/admin/deleteGroup.html"></item>
+				<item name="重命名分组" file="cloud/waterMeter/admin/renameGroup.html"></item>
+				<item name="操作水表分组" file="cloud/waterMeter/admin/setGroup.html"></item> -->
+				<item name="获取水表列表" file="cloud/waterMeter/admin/list.html"></item>
+				<item name="绑定水表" file="cloud/waterMeter/admin/bind.html"></item>
+				<item name="管理员获得水表详情" file="cloud/waterMeter/admin/detail.html"></item>
+				<item name="抄表" file="cloud/waterMeter/admin/syncState.html"></item>
+				<item name="管理员充值" file="cloud/waterMeter/admin/recharge.html"></item>
+				<item name="修改单价" file="cloud/waterMeter/admin/updatePrice.html"></item>
+				<item name="操作水表断水" file="cloud/waterMeter/admin/controlOnOff.html"></item>
+				<item name="清零水表" file="cloud/waterMeter/admin/clear.html"></item>
+				<item name="修改水表名称" file="cloud/waterMeter/admin/rename.html"></item>
+				<item name="操作记录列表" file="cloud/waterMeter/admin/listOperationRecords.html"></item>
+				<item name="用水记录列表" file="cloud/waterMeter/admin/listRecords.html"></item>
+				<item name="设置总用水量" file="cloud/waterMeter/admin/updateTotal.html"></item>
+				<item name="设置付费模式" file="cloud/waterMeter/admin/updatePayMode.html"></item>
+				<item name="检测水表固件是否需要升级" file="cloud/waterMeter/admin/upgradeCheck.html"></item>
+				<item name="升级成功" file="cloud/waterMeter/admin/upgradeSuccess.html"></item>
+				<!-- <item name="蓝牙广播抄表" file="cloud/waterMeter/admin/syncSameAdmin.html"></item> -->
+				<item name="水表关联的网关" file="cloud/waterMeter/admin/gatewayList.html"></item>
+				<item name="生成可以充值用的executeToken" file="cloud/waterMeter/admin/createExecuteToken.html"></item>
+				<item name="蓝牙广播抄表" file="cloud/waterMeter/admin/decodeBleAdvertising.html"></item>
+			</item>
+			<item name="租客相关接口" key="tenant">
+				<item name="获取水表详情" file="cloud/waterMeter/tenant/detail.html"></item>
+				<item name="租客抄表" file="cloud/waterMeter/tenant/syncState.html"></item>
+				<item name="租客充值" file="cloud/waterMeter/tenant/recharge.html"></item>
+				<item name="租客查询操作记录" file="cloud/waterMeter/tenant/listRecharge.html"></item>
+				<item name="租客查询用水记录列表" file="cloud/waterMeter/tenant/listRecords.html"></item>
+			</item>
+		</item>
+	</group>
+	
+	<group name="APP SDK V3" key="appSdkV3">
+		<item name="安卓SDK Demo" key="androidSdkDemoV3">
+			<item name="SDK Demo下载地址" file="appSdkV3/androidSdkDemoV3/download.html"></item>
+			<item name="锁接口列表" file="appSdkV3/androidSdkDemoV3/lockApis.html"></item>
+			<item name="网关接口列表" file="appSdkV3/androidSdkDemoV3/gatewayApis.html"></item>
+			<item name="使用说明及示例" key="androidExample">
+				<item name="使用说明" file="appSdkV3/androidSdkDemoV3/androidExample/instruction.html"></item>
+				<item name="锁初始化示例" file="appSdkV3/androidSdkDemoV3/androidExample/addLock.html"></item>
+				<item name="重置锁示例" file="appSdkV3/androidSdkDemoV3/androidExample/resetLock.html"></item>
+				<item name="开关锁示例" file="appSdkV3/androidSdkDemoV3/androidExample/unlockLock.html"></item>
+				<item name="密码操作示例" file="appSdkV3/androidSdkDemoV3/androidExample/passcode.html"></item>
+				<item name="操作记录示例" file="appSdkV3/androidSdkDemoV3/androidExample/lockRecord.html"></item>
+				<item name="获取锁时间示例" file="appSdkV3/androidSdkDemoV3/androidExample/getLockTime.html"></item>
+				<item name="校准锁时间示例" file="appSdkV3/androidSdkDemoV3/androidExample/setLockTime.html"></item>
+				<item name="网关接口示例" file="appSdkV3/androidSdkDemoV3/androidExample/gateway.html"></item>
+				<item name="添加遥控示例" file="appSdkV3/androidSdkDemoV3/androidExample/addRemote.html"></item>
+				<item name="添加门磁示例" file="appSdkV3/androidSdkDemoV3/androidExample/addDoorSensor.html"></item>
+			</item>
+		</item>
+	
+		<item name="iOS SDK Demo" key="iosSdkDemoV3">
+			<item name="SDK Demo下载地址" file="appSdkV3/iosSdkDemoV3/download.html"></item>
+			<item name="使用说明及示例" key="iosExample">
+				<item name="使用说明" file="appSdkV3/iosSdkDemoV3/iosExample/instruction.html"></item>
+				<item name="锁初始化示例" file="appSdkV3/iosSdkDemoV3/iosExample/addLock.html"></item>
+				<item name="重置锁示例" file="appSdkV3/iosSdkDemoV3/iosExample/resetLock.html"></item>
+				<item name="开关锁示例" file="appSdkV3/iosSdkDemoV3/iosExample/unlockLock.html"></item>
+				<item name="密码操作示例" file="appSdkV3/iosSdkDemoV3/iosExample/passcode.html"></item>
+				<item name="IC卡示例" file="appSdkV3/iosSdkDemoV3/iosExample/card.html"></item>
+				<item name="指纹示例" file="appSdkV3/iosSdkDemoV3/iosExample/fingerprint.html"></item>
+				<item name="网关接口示例" file="appSdkV3/iosSdkDemoV3/iosExample/gateway.html"></item>
+				<item name="无线键盘示例" file="appSdkV3/iosSdkDemoV3/iosExample/wirelessKeypad.html">	</item>
+				<item name="添加门磁示例" file="appSdkV3/iosSdkDemoV3/iosExample/addDoorSensor.html"></item>
+				<item name="添加遥控示例" file="appSdkV3/iosSdkDemoV3/iosExample/remoteControl.html"></item>
+			</item>
+		</item>
+		
+		<item name="微信小程序插件" file="userGuide/wechat.html"></item>
+		
+		<item name="Flutter SDK DEMO" file="userGuide/flutter.html"></item>
+	</group>
+
+	<group name="流程示例" key="example">
+		<item name="通通酒店对接流程" file="example/TTHotelIntegration.html"></item>
+		<item name="常见问题" file="example/FQA.html"></item>
+	</group>
+</root>

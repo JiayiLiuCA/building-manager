@@ -1,0 +1,261 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width initial-scale=1'>
+    <base target="_blank">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400italic,700italic,700,400&subset=latin,latin-ext'
+          rel='stylesheet' type='text/css'/>
+    <link href="../../../css/style.css" rel="stylesheet">
+    <title>add</title>
+</head>
+<body class='typora-export os-windows'>
+<div class='typora-export-content'>
+    <div id='write' class=''><h1 id='添加门磁'><span>添加门磁</span></h1>
+        <p><strong><code>https://api.sciener.com/v3/doorSensor/add</code></strong></p>
+        <p><span>门磁可以用来监控门的开关状态。</span></p>
+        <p><span>通过</span><a
+                href="https://cnopen.ttlock.com/document/doc?urlName=appSdkV3%2FandroidSdkDemoV3%2FlockApis.html"><span>APP SDK</span></a><span>给锁添加了门磁后调用该接口，在云端将门磁与锁绑定。</span>
+        </p>
+        <h3 id='1-http请求方法及示例'><span>1 HTTP请求方法及示例</span></h3>
+        <p><code>POST, ContentType:application/x-www-form-urlencoded</code></p>
+        <pre class="md-fences md-end-block md-fences-with-lineno ty-contain-cm modeLoaded" spellcheck="false"
+             lang="javascript"><div class="CodeMirror cm-s-inner cm-s-null-scroll CodeMirror-wrap" lang="javascript"><div
+                style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 9.51875px; left: 36px;"><textarea
+                autocorrect="off" autocapitalize="off" spellcheck="false" tabindex="0"
+                style="position: absolute; bottom: -1em; padding: 0px; width: 1000px; height: 1em; outline: none;"></textarea></div><div
+                class="CodeMirror-scrollbar-filler" cm-not-content="true"></div><div class="CodeMirror-gutter-filler"
+                                                                                     cm-not-content="true"></div><div
+                class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer"
+                                                             style="margin-left: 28px; margin-bottom: 0px; border-right-width: 0px; padding-right: 0px; padding-bottom: 0px;"><div
+                style="position: relative; top: 0px;"><div class="CodeMirror-lines" role="presentation"><div
+                role="presentation" style="position: relative; outline: none;"><div class="CodeMirror-measure"><pre><span>xxxxxxxxxx</span></pre><div
+                class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>10</div></div></div><div
+                class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div
+                class="CodeMirror-code" role="presentation" style=""><div class="CodeMirror-activeline"
+                                                                          style="position: relative;"><div
+                class="CodeMirror-activeline-background CodeMirror-linebackground"></div><div
+                class="CodeMirror-gutter-background CodeMirror-activeline-gutter"
+                style="left: -28px; width: 28px;"></div><div
+                class="CodeMirror-gutter-wrapper CodeMirror-activeline-gutter" style="left: -28px;"><div
+                class="CodeMirror-linenumber CodeMirror-gutter-elt CodeMirror-linenumber-show"
+                style="left: 0px; width: 19px;">1</div></div><pre class=" CodeMirror-line " role="presentation"><span
+                role="presentation" style="padding-right: 0.1px;"><span class="cm-variable">curl</span> <span
+                class="cm-operator">--</span><span class="cm-variable">location</span> <span
+                class="cm-operator">-</span><span class="cm-variable">g</span> <span class="cm-operator">--</span><span
+                class="cm-variable">request</span> <span class="cm-variable">POST</span> <span class="cm-string">'https://api.sciener.com/v3/doorSensor/add'</span> \</span></pre></div><div
+                style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -28px;"><div
+                class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 19px;">2</div></div><pre
+                class=" CodeMirror-line " role="presentation"><span role="presentation"
+                                                                    style="padding-right: 0.1px;"><span
+                class="cm-operator">--</span><span class="cm-variable">data</span><span
+                class="cm-operator">-</span><span class="cm-variable">urlencode</span> <span class="cm-string">'clientId=4773aa036f7f49c68d876bb4be85c80c'</span> \</span></pre></div><div
+                style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -28px;"><div
+                class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 19px;">3</div></div><pre
+                class=" CodeMirror-line " role="presentation"><span role="presentation"
+                                                                    style="padding-right: 0.1px;"><span
+                class="cm-operator">--</span><span class="cm-variable">data</span><span
+                class="cm-operator">-</span><span class="cm-variable">urlencode</span> <span class="cm-string">'accessToken=dfd5489d0cee31f0bdfaf59d0d42d71f'</span> \</span></pre></div><div
+                style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -28px;"><div
+                class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 19px;">4</div></div><pre
+                class=" CodeMirror-line " role="presentation"><span role="presentation"
+                                                                    style="padding-right: 0.1px;"><span
+                class="cm-operator">--</span><span class="cm-variable">data</span><span
+                class="cm-operator">-</span><span class="cm-variable">urlencode</span> <span class="cm-string">'lockId=163377'</span> \</span></pre></div><div
+                style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -28px;"><div
+                class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 19px;">5</div></div><pre
+                class=" CodeMirror-line " role="presentation"><span role="presentation"
+                                                                    style="padding-right: 0.1px;"><span
+                class="cm-operator">--</span><span class="cm-variable">data</span><span
+                class="cm-operator">-</span><span class="cm-variable">urlencode</span> <span class="cm-string">'name=大门门磁'</span> \</span></pre></div><div
+                style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -28px;"><div
+                class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 19px;">6</div></div><pre
+                class=" CodeMirror-line " role="presentation"><span role="presentation"
+                                                                    style="padding-right: 0.1px;"><span
+                class="cm-operator">--</span><span class="cm-variable">data</span><span
+                class="cm-operator">-</span><span class="cm-variable">urlencode</span> <span class="cm-string">'mac=C9:27:AB:43:22:80'</span> \</span></pre></div><div
+                style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -28px;"><div
+                class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 19px;">7</div></div><pre
+                class=" CodeMirror-line " role="presentation"><span role="presentation"
+                                                                    style="padding-right: 0.1px;"><span
+                class="cm-operator">--</span><span class="cm-variable">data</span><span
+                class="cm-operator">-</span><span class="cm-variable">urlencode</span> <span class="cm-string">'firmwareInfo={&quot;modelNum&quot;:&quot;SN405_LR&quot;,&quot;hardwareRevision&quot;:&quot;1.3&quot;,&quot;firmwareRevision&quot;:&quot;1.0.0.210903&quot;}'</span> \</span></pre></div><div
+                style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -28px;"><div
+                class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 19px;">8</div></div><pre
+                class=" CodeMirror-line " role="presentation"><span role="presentation"
+                                                                    style="padding-right: 0.1px;"><span
+                class="cm-operator">--</span><span class="cm-variable">data</span><span
+                class="cm-operator">-</span><span class="cm-variable">urlencode</span> <span class="cm-string">'number=DS2_a961c2'</span> \</span></pre></div><div
+                style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -28px;"><div
+                class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 19px;">9</div></div><pre
+                class=" CodeMirror-line " role="presentation"><span role="presentation"
+                                                                    style="padding-right: 0.1px;"><span
+                class="cm-operator">--</span><span class="cm-variable">data</span><span
+                class="cm-operator">-</span><span class="cm-variable">urlencode</span> <span class="cm-string">'electricQuantity=85'</span> \</span></pre></div><div
+                style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -28px;"><div
+                class="CodeMirror-linenumber CodeMirror-gutter-elt CodeMirror-linenumber-show"
+                style="left: 0px; width: 19px;">10</div></div><pre class=" CodeMirror-line " role="presentation"><span
+                role="presentation" style="padding-right: 0.1px;"><span class="cm-operator">--</span><span
+                class="cm-variable">data</span><span class="cm-operator">-</span><span
+                class="cm-variable">urlencode</span> <span
+                class="cm-string">'date=1625025703000'</span></span></pre></div></div></div></div></div></div><div
+                style="position: absolute; height: 0px; width: 1px; border-bottom: 0px solid transparent; top: 230px;"></div><div
+                class="CodeMirror-gutters" style="height: 230px;"><div class="CodeMirror-gutter CodeMirror-linenumbers"
+                                                                       style="width: 27px;"></div></div></div></div></pre>
+        <h3 id='2-参数说明'><span>2 参数说明</span></h3>
+        <figure class='table-figure'>
+            <table>
+                <thead>
+                <tr>
+                    <th><span>名称</span></th>
+                    <th><span>类型</span></th>
+                    <th style='text-align:left;'><span>是否必需</span></th>
+                    <th><span>描述</span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td><span>clientId</span></td>
+                    <td><span>String</span></td>
+                    <td style='text-align:left;'><span>Y</span></td>
+                    <td><a href='/CreateApplication'><span>创建应用</span></a><span>分配的client_id</span></td>
+                </tr>
+                <tr>
+                    <td><span>accessToken</span></td>
+                    <td><span>String</span></td>
+                    <td style='text-align:left;'><span>Y</span></td>
+                    <td><span>访问令牌，通过</span><a
+                            href='/document/doc?urlName=cloud/oauth2/getAccessToken.html'><span>获取访问令牌</span></a><span>接口获取</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td><span>lockId</span></td>
+                    <td><span>Int</span></td>
+                    <td style='text-align:left;'><span>Y</span></td>
+                    <td><span>锁ID，由</span><a
+                            href='/document/doc?urlName=cloud/lock/initialize.html'><span>锁初始化</span></a><span>接口生成</span>
+                    </td>
+                </tr>
+                <tr>
+                    <td><span>name</span></td>
+                    <td><span>String</span></td>
+                    <td style='text-align:left;'><span>N</span></td>
+                    <td><span>门磁名称，不传默认用锁别名</span></td>
+                </tr>
+                <tr>
+                    <td><span>electricQuantity</span></td>
+                    <td><span>Int</span></td>
+                    <td style='text-align:left;'><span>Y</span></td>
+                    <td><span>门磁电量</span></td>
+                </tr>
+                <tr>
+                    <td><span>firmwareInfo</span></td>
+                    <td><span>JSONObject</span></td>
+                    <td style='text-align:left;'><span>Y</span></td>
+                    <td><span>门磁版本信息</span></td>
+                </tr>
+                <tr>
+                    <td><span>mac</span></td>
+                    <td><span>String</span></td>
+                    <td style='text-align:left;'><span>Y</span></td>
+                    <td><span>门磁Mac地址</span></td>
+                </tr>
+                <tr>
+                    <td><span>number</span></td>
+                    <td><span>String</span></td>
+                    <td style='text-align:left;'><span>Y</span></td>
+                    <td><span>门磁编号</span></td>
+                </tr>
+                <tr>
+                    <td><span>date</span></td>
+                    <td><span>Long</span></td>
+                    <td style='text-align:left;'><span>Y</span></td>
+                    <td><span>当前时间（时间戳，单位毫秒）</span></td>
+                </tr>
+                </tbody>
+            </table>
+        </figure>
+        <p><span>firmwareInfo中的参数：</span></p>
+        <figure class='table-figure'>
+            <table>
+                <thead>
+                <tr>
+                    <th><span>参数</span></th>
+                    <th><span>类型</span></th>
+                    <th><span>描述</span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td><span>modelNum</span></td>
+                    <td><span>String</span></td>
+                    <td><span>产品型号</span></td>
+                </tr>
+                <tr>
+                    <td><span>hardwareRevision</span></td>
+                    <td><span>String</span></td>
+                    <td><span>硬件版本号</span></td>
+                </tr>
+                <tr>
+                    <td><span>firmwareRevision</span></td>
+                    <td><span>String</span></td>
+                    <td><span>固件版本号</span></td>
+                </tr>
+                </tbody>
+            </table>
+        </figure>
+        <h3 id='3-返回参数及示例'><span>3 返回参数及示例</span></h3>
+        <figure class='table-figure'>
+            <table>
+                <thead>
+                <tr>
+                    <th><span>参数</span></th>
+                    <th><span>类型</span></th>
+                    <th><span>描述</span></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td><span>doorSensorId</span></td>
+                    <td><span>Int</span></td>
+                    <td><span>门磁ID</span></td>
+                </tr>
+                </tbody>
+            </table>
+        </figure>
+        <pre class="md-fences md-end-block md-fences-with-lineno ty-contain-cm modeLoaded" spellcheck="false" lang=""
+             style="break-inside: unset;"><div class="CodeMirror cm-s-inner cm-s-null-scroll CodeMirror-wrap" lang=""><div
+                style="overflow: hidden; position: relative; width: 3px; height: 0px; top: 9.51875px; left: 44px;"><textarea
+                autocorrect="off" autocapitalize="off" spellcheck="false" tabindex="0"
+                style="position: absolute; bottom: -1em; padding: 0px; width: 1000px; height: 1em; outline: none;"></textarea></div><div
+                class="CodeMirror-scrollbar-filler" cm-not-content="true"></div><div class="CodeMirror-gutter-filler"
+                                                                                     cm-not-content="true"></div><div
+                class="CodeMirror-scroll" tabindex="-1"><div class="CodeMirror-sizer"
+                                                             style="margin-left: 36px; margin-bottom: 0px; border-right-width: 0px; padding-right: 0px; padding-bottom: 0px;"><div
+                style="position: relative; top: 0px;"><div class="CodeMirror-lines" role="presentation"><div
+                role="presentation" style="position: relative; outline: none;"><div class="CodeMirror-measure"><pre><span>xxxxxxxxxx</span></pre><div
+                class="CodeMirror-linenumber CodeMirror-gutter-elt"><div>3</div></div></div><div
+                class="CodeMirror-measure"></div><div style="position: relative; z-index: 1;"></div><div
+                class="CodeMirror-code" role="presentation" style=""><div class="CodeMirror-activeline"
+                                                                          style="position: relative;"><div
+                class="CodeMirror-activeline-background CodeMirror-linebackground"></div><div
+                class="CodeMirror-gutter-background CodeMirror-activeline-gutter"
+                style="left: -36px; width: 36px;"></div><div
+                class="CodeMirror-gutter-wrapper CodeMirror-activeline-gutter" style="left: -36px;"><div
+                class="CodeMirror-linenumber CodeMirror-gutter-elt CodeMirror-linenumber-show"
+                style="left: 0px; width: 27px;">1</div></div><pre class=" CodeMirror-line " role="presentation"><span
+                role="presentation" style="padding-right: 0.1px;">{</span></pre></div><div style="position: relative;"><div
+                class="CodeMirror-gutter-wrapper" style="left: -36px;"><div
+                class="CodeMirror-linenumber CodeMirror-gutter-elt" style="left: 0px; width: 27px;">2</div></div><pre
+                class=" CodeMirror-line " role="presentation"><span role="presentation" style="padding-right: 0.1px;"> &nbsp; &nbsp; &nbsp;  "doorSensorId": 2323</span></pre></div><div
+                style="position: relative;"><div class="CodeMirror-gutter-wrapper" style="left: -36px;"><div
+                class="CodeMirror-linenumber CodeMirror-gutter-elt CodeMirror-linenumber-show"
+                style="left: 0px; width: 27px;">3</div></div><pre class=" CodeMirror-line " role="presentation"><span
+                role="presentation" style="padding-right: 0.1px;">}</span></pre></div></div></div></div></div></div><div
+                style="position: absolute; height: 0px; width: 1px; border-bottom: 0px solid transparent; top: 69px;"></div><div
+                class="CodeMirror-gutters" style="height: 69px;"><div class="CodeMirror-gutter CodeMirror-linenumbers"
+                                                                       style="width: 35px;"></div></div></div></div></pre>
+    </div>
+</div>
+</body>
+</html>

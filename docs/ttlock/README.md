@@ -1,0 +1,307 @@
+# 通通锁（TTLock）开放平台文档归档
+
+> 来源：https://cnopen.ttlock.com/document/doc?urlName=userGuide%2Fekey.html （科技侠/通通锁中国站开放平台）
+> 抓取日期：2026-07-15 · 共 242 个文档页（HTML 原版，Typora 导出格式，CSS 内联，可直接本地打开）
+
+## 归档说明
+
+- `pages/` — 全部文档页，目录结构与官网 `documentPages/htmlPages/` 一致。**双击任意 .html 可离线阅读**。
+- `assets/images/` — 文档引用的全部图片（已从 open.sciener.com / euopen.sciener.com 下载，页面内引用已改写为本地相对路径）。
+- `newMenu.xml` — 官网侧边栏菜单的原始定义文件，本 README 的目录树由它生成。
+- 在线阅读某一页：`https://cnopen.ttlock.com/document/doc?urlName=<pages/ 下的相对路径>`（URL 编码 `/` 为 `%2F`）。
+- 已知问题：菜单中「独立门磁 > 设置报警提醒」指向的 `cloud/doorSensor/standaloneDoorSensor/configAlert.html` 在官网即为 404（死链），未归档；实际可用的是同目录 `configAlertFlag.html`。
+
+## 本项目（WiFi 版通通锁）要点速览
+
+- **WiFi 锁不需要网关**：直连 WiFi 上云，功能与"锁+网关"基本一致，接口调用方式和传参完全相同。见 [WiFi锁对接指南](pages/userGuide/wifiLock.html)。
+- **对接总流程**：注册开发者账号 → 创建应用拿 `client_id/client_secret`（人工审核）→ 用通通锁 APP 账号+密码（MD5）调 `POST https://api.sciener.com/oauth2/token` 换 `accessToken`（默认 90 天有效）→ 携带 token 调其余 API。见 [如何开始对接](pages/userGuide/getStarted.html)。**官方不提供测试账号/沙箱**。
+- **远程开锁**：`POST https://api.sciener.com/v3/lock/unlock`（WiFi 锁在线即可）。返回 -4043 时需在科技侠 APP 锁设置里打开"远程开锁"开关。见 [开锁](pages/cloud/gateway/unlock.html)。
+- **省电模式陷阱**：WiFi 锁默认关闭省电模式（保持长连接、可实时下发指令）。开启省电模式后云端无法主动下发指令，远程开锁返回 -3035；异步指令（如 addType=4 加密码）会进缓存队列等锁唤醒。见 [WiFi锁对接指南](pages/userGuide/wifiLock.html)。
+- **密码两套方案**：随机密码（云端算法生成 6-9 位，不依赖锁联网，有 24 小时内首次使用等限制）与自定义密码（4-9 位，WiFi 锁可 addType=2 远程下发，锁内最多 150 个）。见 [密码开锁](pages/userGuide/passcode.html)。
+- **开锁记录**：WiFi 锁自动实时上传记录到云端；云端保存半年；可在应用详情页配置回调地址接收准实时推送（回调需返回字符串 "success"）。见 [开锁记录](pages/userGuide/lockRecord.html)、[锁记录回调通知](pages/cloud/lockRecord/notify.html)。
+- **WiFi 锁专用接口**：[获取Wifi锁信息](pages/cloud/wifiLock/detail.html)（在线状态/信号/省电模式）、[更新联网信息](pages/cloud/wifiLock/updateNetwork.html)。
+- **API 域名**：中国站 `https://api.sciener.com`；所有接口均为 POST + `application/x-www-form-urlencoded`，公共参数 `clientId`、`accessToken`、`date`（毫秒时间戳）。
+- **锁的初始化/绑定**只能通过蓝牙在锁旁完成（科技侠 APP 或集成 APP SDK），云端 API 无法替代这一步。
+
+## 文档目录
+
+## 开发指南
+
+- [如何开始对接](pages/userGuide/getStarted.html)
+- [APP开锁（电子钥匙）](pages/userGuide/ekey.html)
+- [密码开锁](pages/userGuide/passcode.html)
+- [酒店发卡器发卡](pages/userGuide/hotelCard.html)
+- [微信小程序对接](pages/userGuide/wechat.html)
+- [支付宝小程序对接](pages/userGuide/Alipay.html)
+- [远程开锁（网关）](pages/userGuide/gateway.html)
+- [远程开锁（WiFi锁）](pages/userGuide/wifiLock.html)
+- [水电表对接](pages/userGuide/waterAndEletricMeter.html)
+- [开锁记录](pages/userGuide/lockRecord.html)
+- [本地化对接](pages/userGuide/onPremise.html)
+- [三方设备对接](pages/userGuide/Third-party.html)
+- [TTLock n8n](pages/userGuide/TTlockn8n.html)
+
+## Cloud API V3
+
+- [错误码](pages/cloud/errorCode.html)
+- **获取和刷新访问令牌**
+  - [获取访问令牌](pages/cloud/oauth2/getAccessToken.html)
+  - [刷新访问令牌](pages/cloud/oauth2/refreshAccessToken.html)
+- **用户相关接口**
+  - [新用户注册](pages/cloud/user/register.html)
+  - [用户重置密码](pages/cloud/user/resetPassword.html)
+  - [获取用户列表](pages/cloud/user/list.html)
+  - [删除用户](pages/cloud/user/delete.html)
+- **锁相关接口**
+  - [锁初始化](pages/cloud/lock/initialize.html)
+  - [获取名下锁列表](pages/cloud/lock/list.html)
+  - [获取锁详细信息](pages/cloud/lock/detail.html)
+  - [删除锁](pages/cloud/lock/delete.html)
+  - [更新锁数据](pages/cloud/lock/updateLockData.html)
+  - [修改锁名称](pages/cloud/lock/rename.html)
+  - [修改锁管理员键盘密码](pages/cloud/lock/updateAdminPasscode.html)
+  - [转移锁](pages/cloud/lock/transfer.html)
+  - [上传锁电量](pages/cloud/lock/updateElectricQuantity.html)
+  - [设置自动闭锁时间](pages/cloud/lock/setAutoLockTime.html)
+  - [设置常开模式](pages/cloud/lock/configurePassageMode.html)
+  - [获取常开模式设置](pages/cloud/lock/getPassageModeConfiguration.html)
+  - [设置酒店卡扇区](pages/cloud/lock/setHotelCardSector.html)
+  - [修改锁设置项](pages/cloud/lock/updateSetting.html)
+  - [查询锁设置项](pages/cloud/lock/querySetting.html)
+  - [获取锁工作时间](pages/cloud/lock/getWorkingMode.html)
+  - [设置锁工作时间](pages/cloud/lock/configWorkingMode.html)
+- **电子钥匙相关接口**
+  - [发送钥匙](pages/cloud/ekey/send.html)
+  - [获取名下钥匙列表](pages/cloud/ekey/list.html)
+  - [获取单把钥匙](pages/cloud/ekey/get.html)
+  - [获取锁的钥匙列表](pages/cloud/ekey/listByLock.html)
+  - [删除钥匙](pages/cloud/ekey/delete.html)
+  - [冻结钥匙](pages/cloud/ekey/freeze.html)
+  - [解除冻结钥匙](pages/cloud/ekey/unfreeze.html)
+  - [修改钥匙](pages/cloud/ekey/modify.html)
+  - [修改钥匙有效期](pages/cloud/ekey/updateDate.html)
+  - [钥匙管理员授权](pages/cloud/ekey/authorize.html)
+  - [解除钥匙管理员授权](pages/cloud/ekey/unauthorize.html)
+  - [获取钥匙开锁链接](pages/cloud/ekey/getUnlockLink.html)
+- **密码相关接口**
+  - [获取随机密码](pages/cloud/passcode/get.html)
+  - [添加自定义密码](pages/cloud/passcode/add.html)
+  - [获取锁的密码列表](pages/cloud/passcode/list.html)
+  - [删除密码](pages/cloud/passcode/delete.html)
+  - [修改密码](pages/cloud/passcode/update.html)
+- **网关相关接口**
+  - [开锁](pages/cloud/gateway/unlock.html)
+  - [闭锁](pages/cloud/gateway/lock.html)
+  - [查询锁的开关状态](pages/cloud/gateway/queryLockOpenState.html)
+  - [读取锁时间](pages/cloud/gateway/queryLockDatetime.html)
+  - [校准锁时间](pages/cloud/gateway/adjustLockDatetime.html)
+  - [查询锁电量](pages/cloud/gateway/queryLockElectricQuantity.html)
+  - [获取名下网关列表](pages/cloud/gateway/list.html)
+  - [删除网关](pages/cloud/gateway/delete.html)
+  - [网关重命名](pages/cloud/gateway/rename.html)
+  - [转移网关](pages/cloud/gateway/transfer.html)
+  - [获取锁连接的网关列表](pages/cloud/gateway/listByLock.html)
+  - [获取网关管理的锁列表](pages/cloud/gateway/listLock.html)
+  - [获取网关详细信息](pages/cloud/gateway/detail.html)
+  - [查询某网关是否初始化成功](pages/cloud/gateway/isInitSuccess.html)
+  - [上传网关信息](pages/cloud/gateway/uploadDetail.html)
+  - [检测网关固件是否需要升级](pages/cloud/gateway/checkUpgrade.html)
+  - [设置网关进入升级模式](pages/cloud/gateway/setIntoUpgradeMode.html)
+  - [获取网关连接的设备列表](pages/cloud/gateway/listDevice.html)
+- **IC卡相关接口**
+  - [添加IC卡](pages/cloud/card/add.html)
+  - [获取锁名下IC卡列表](pages/cloud/card/list.html)
+  - [删除IC卡](pages/cloud/card/delete.html)
+  - [修改IC卡有效期](pages/cloud/card/update.html)
+  - [清空IC卡](pages/cloud/card/clear.html)
+  - [IC卡重命名](pages/cloud/card/rename.html)
+- **指纹相关接口**
+  - [添加指纹](pages/cloud/fingerprint/add.html)
+  - [获取锁名下指纹列表](pages/cloud/fingerprint/list.html)
+  - [删除指纹](pages/cloud/fingerprint/delete.html)
+  - [修改指纹有效期](pages/cloud/fingerprint/update.html)
+  - [清空指纹](pages/cloud/fingerprint/clear.html)
+  - [指纹重命名](pages/cloud/fingerprint/rename.html)
+- **人脸相关接口**
+  - [获取人脸特征值数据](pages/cloud/face/getFeatureData.html)
+  - [添加人脸](pages/cloud/face/add.html)
+  - [获取锁名下人脸列表](pages/cloud/face/list.html)
+  - [删除人脸](pages/cloud/face/delete.html)
+  - [修改人脸有效期](pages/cloud/face/update.html)
+  - [清空人脸](pages/cloud/face/clear.html)
+  - [人脸重命名](pages/cloud/face/rename.html)
+- **锁记录相关接口**
+  - [获取开锁记录列表](pages/cloud/lockRecord/list.html)
+  - [上传锁记录](pages/cloud/lockRecord/upload.html)
+  - [删除锁记录](pages/cloud/lockRecord/delete.html)
+  - [清空锁记录](pages/cloud/lockRecord/clear.html)
+  - [锁记录回调通知](pages/cloud/lockRecord/notify.html)
+- **分组相关接口**
+  - [添加分组](pages/cloud/group/add.html)
+  - [获取名下分组列表](pages/cloud/group/list.html)
+  - [设置锁所属分组](pages/cloud/group/setLockGroup.html)
+  - [删除分组](pages/cloud/group/delete.html)
+  - [修改分组名称](pages/cloud/group/rename.html)
+  - [设置设备所属分组](pages/cloud/group/setDeviceGroup.html)
+- **锁固件升级相关接口**
+  - [检测锁固件是否需要升级](pages/cloud/lockUpgrade/check.html)
+  - [再次检测锁固件是否需要升级](pages/cloud/lockUpgrade/recheck.html)
+- **无线键盘相关接口**
+  - [添加无线键盘](pages/cloud/wirelessKeypad/add.html)
+  - [获取锁的无线键盘列表](pages/cloud/wirelessKeypad/list.html)
+  - [删除无线键盘](pages/cloud/wirelessKeypad/delete.html)
+  - [无线键盘重命名](pages/cloud/wirelessKeypad/rename.html)
+  - [检查无线键盘是否需要升级](pages/cloud/wirelessKeypad/upgrade.html)
+  - [无线键盘升级成功](pages/cloud/wirelessKeypad/upgradeSuccess.html)
+- **遥控相关接口**
+  - [添加遥控](pages/cloud/remote/add.html)
+  - [获取锁的遥控列表](pages/cloud/remote/list.html)
+  - [删除遥控](pages/cloud/remote/delete.html)
+  - [清空遥控](pages/cloud/remote/clear.html)
+  - [更新遥控信息](pages/cloud/remote/update.html)
+  - [检查遥控是否需要升级](pages/cloud/remote/upgrade.html)
+  - [遥控升级成功](pages/cloud/remote/upgradeSuccess.html)
+- **门磁相关接口**
+  - **独立门磁相关接口**
+    - [添加门磁](pages/cloud/doorSensor/standaloneDoorSensor/add.html)
+    - [查询门磁列表](pages/cloud/doorSensor/standaloneDoorSensor/list.html)
+    - ~~配置门磁提醒~~（官网死链 404 未归档，参考 [配置独立门磁提醒](pages/cloud/doorSensor/standaloneDoorSensor/configAlertFlag.html)）
+    - [配置网络信息](pages/cloud/doorSensor/standaloneDoorSensor/configNetwork.html)
+    - [查询门磁操作记录](pages/cloud/doorSensor/standaloneDoorSensor/listRecord.html)
+    - [修改门磁名称](pages/cloud/doorSensor/standaloneDoorSensor/update.html)
+    - [删除门磁信息](pages/cloud/doorSensor/standaloneDoorSensor/delete.html)
+    - [分享独立门磁](pages/cloud/doorSensor/standaloneDoorSensor/addDoorSensorUser.html)
+    - [查询独立门磁被分享的用户列表](pages/cloud/doorSensor/standaloneDoorSensor/listDoorSensorUser.html)
+    - [删除独立门磁分享的用户](pages/cloud/doorSensor/standaloneDoorSensor/deleteDoorSensorUser.html)
+    - [本地化门磁固件是否升级](pages/cloud/doorSensor/standaloneDoorSensor/checkUpgradeOnPremise.html)
+    - [配置独立门磁提醒](pages/cloud/doorSensor/standaloneDoorSensor/configAlertFlag.html)
+    - [获取独立门磁提醒](pages/cloud/doorSensor/standaloneDoorSensor/getAlertFlag.html)
+    - [独立门磁记录回调通知](pages/cloud/doorSensor/standaloneDoorSensor/notify.html)
+  - [添加门磁](pages/cloud/doorSensor/add.html)
+  - [查询锁的门磁信息](pages/cloud/doorSensor/query.html)
+  - [删除门磁](pages/cloud/doorSensor/delete.html)
+  - [更新门磁信息](pages/cloud/doorSensor/update.html)
+  - [检查门磁是否需要升级](pages/cloud/doorSensor/upgrade.html)
+  - [门磁升级成功](pages/cloud/doorSensor/upgradeSuccess.html)
+  - [门磁闭合记录](pages/cloud/doorSensor/listRecord.html)
+- **NB-IoT相关接口**
+  - [NB-IoT锁注册](pages/cloud/nb/register.html)
+  - [获取锁的NB-Iot设备信息](pages/cloud/nb/getDeviceInfo.html)
+  - [获取NB-IoT云平台IP和端口](pages/cloud/nb/getPlatformIpAndPort.html)
+- **二维码相关接口**
+  - [添加二维码](pages/cloud/qrCode/add.html)
+  - [获取锁名下二维码列表](pages/cloud/qrCode/list.html)
+  - [获取二维码数据](pages/cloud/qrCode/getData.html)
+  - [修改二维码](pages/cloud/qrCode/update.html)
+  - [删除二维码](pages/cloud/qrCode/delete.html)
+  - [清空二维码](pages/cloud/qrCode/clear.html)
+- **WiFi锁相关接口**
+  - [上传Wifi锁网络信息](pages/cloud/wifiLock/updateNetwork.html)
+  - [获取Wifi锁信息](pages/cloud/wifiLock/detail.html)
+- **掌静脉相关接口**
+  - [获取锁掌静脉列表](pages/cloud/palmVein/getPalmVeinList.html)
+  - [添加掌静脉](pages/cloud/palmVein/addPalmVein.html)
+  - [修改掌静脉名称](pages/cloud/palmVein/renamePalmVein.html)
+  - [修改掌静脉有效期](pages/cloud/palmVein/changePalmVeinPeriod.html)
+  - [删除掌静脉](pages/cloud/palmVein/deletePalmVein.html)
+  - [清空掌静脉](pages/cloud/palmVein/clearPalmVein.html)
+- **电表相关接口**
+  - **管理员相关接口**
+    - [添加分组](pages/cloud/eletricMeter/admin/addGroup.html)
+    - [删除分组](pages/cloud/eletricMeter/admin/deleteGroup.html)
+    - [重命名分组](pages/cloud/eletricMeter/admin/renameGroup.html)
+    - [操作电表分组](pages/cloud/eletricMeter/admin/setGroup.html)
+    - [获取电表列表](pages/cloud/eletricMeter/admin/list.html)
+    - [绑定电表](pages/cloud/eletricMeter/admin/bind.html)
+    - [管理员获得电表详情](pages/cloud/eletricMeter/admin/detail.html)
+    - [抄表](pages/cloud/eletricMeter/admin/syncState.html)
+    - [管理员充值](pages/cloud/eletricMeter/admin/recharge.html)
+    - [修改单价](pages/cloud/eletricMeter/admin/updatePrice.html)
+    - [操作电表通断电](pages/cloud/eletricMeter/admin/controlOnOff.html)
+    - [清零电表](pages/cloud/eletricMeter/admin/clear.html)
+    - [修改电表名称](pages/cloud/eletricMeter/admin/rename.html)
+    - [操作记录列表](pages/cloud/eletricMeter/admin/listOperationRecords.html)
+    - [用电记录列表](pages/cloud/eletricMeter/admin/listRecords.html)
+    - [设置最大功率](pages/cloud/eletricMeter/admin/updateMaxPower.html)
+    - [设置付费模式](pages/cloud/eletricMeter/admin/updatePayMode.html)
+    - [检测电表固件是否需要升级](pages/cloud/eletricMeter/admin/upgradeCheck.html)
+    - [升级成功](pages/cloud/eletricMeter/admin/upgradeSuccess.html)
+    - [电表关联的网关](pages/cloud/eletricMeter/admin/gatewayList.html)
+    - [生成可以充值用的executeToken](pages/cloud/eletricMeter/admin/createExecuteToken.html)
+    - [蓝牙广播抄表](pages/cloud/eletricMeter/admin/decodeBleAdvertising.html)
+  - **租客相关接口**
+    - [租客获取电表详情](pages/cloud/eletricMeter/tenant/detail.html)
+    - [租客抄表](pages/cloud/eletricMeter/tenant/syncState.html)
+    - [租客充值](pages/cloud/eletricMeter/tenant/recharge.html)
+    - [租客查询操作记录](pages/cloud/eletricMeter/tenant/listRecharge.html)
+    - [租客查询用电记录列表](pages/cloud/eletricMeter/tenant/listRecords.html)
+- **水表相关接口**
+  - **管理员相关接口**
+    - [添加分组](pages/cloud/waterMeter/admin/addGroup.html)
+    - [删除分组](pages/cloud/waterMeter/admin/deleteGroup.html)
+    - [重命名分组](pages/cloud/waterMeter/admin/renameGroup.html)
+    - [操作水表分组](pages/cloud/waterMeter/admin/setGroup.html)
+    - [获取水表列表](pages/cloud/waterMeter/admin/list.html)
+    - [绑定水表](pages/cloud/waterMeter/admin/bind.html)
+    - [管理员获得水表详情](pages/cloud/waterMeter/admin/detail.html)
+    - [抄表](pages/cloud/waterMeter/admin/syncState.html)
+    - [管理员充值](pages/cloud/waterMeter/admin/recharge.html)
+    - [修改单价](pages/cloud/waterMeter/admin/updatePrice.html)
+    - [操作水表断水](pages/cloud/waterMeter/admin/controlOnOff.html)
+    - [清零水表](pages/cloud/waterMeter/admin/clear.html)
+    - [修改水表名称](pages/cloud/waterMeter/admin/rename.html)
+    - [操作记录列表](pages/cloud/waterMeter/admin/listOperationRecords.html)
+    - [用水记录列表](pages/cloud/waterMeter/admin/listRecords.html)
+    - [设置总用水量](pages/cloud/waterMeter/admin/updateTotal.html)
+    - [设置付费模式](pages/cloud/waterMeter/admin/updatePayMode.html)
+    - [检测水表固件是否需要升级](pages/cloud/waterMeter/admin/upgradeCheck.html)
+    - [升级成功](pages/cloud/waterMeter/admin/upgradeSuccess.html)
+    - [水表关联的网关](pages/cloud/waterMeter/admin/gatewayList.html)
+    - [生成可以充值用的executeToken](pages/cloud/waterMeter/admin/createExecuteToken.html)
+    - [蓝牙广播抄表](pages/cloud/waterMeter/admin/decodeBleAdvertising.html)
+  - **租客相关接口**
+    - [获取水表详情](pages/cloud/waterMeter/tenant/detail.html)
+    - [租客抄表](pages/cloud/waterMeter/tenant/syncState.html)
+    - [租客充值](pages/cloud/waterMeter/tenant/recharge.html)
+    - [租客查询操作记录](pages/cloud/waterMeter/tenant/listRecharge.html)
+    - [租客查询用水记录列表](pages/cloud/waterMeter/tenant/listRecords.html)
+
+## APP SDK V3
+
+- **安卓SDK Demo**
+  - [SDK Demo下载地址](pages/appSdkV3/androidSdkDemoV3/download.html)
+  - [锁接口列表](pages/appSdkV3/androidSdkDemoV3/lockApis.html)
+  - [网关接口列表](pages/appSdkV3/androidSdkDemoV3/gatewayApis.html)
+  - **使用说明及示例**
+    - [使用说明](pages/appSdkV3/androidSdkDemoV3/androidExample/instruction.html)
+    - [锁初始化示例](pages/appSdkV3/androidSdkDemoV3/androidExample/addLock.html)
+    - [重置锁示例](pages/appSdkV3/androidSdkDemoV3/androidExample/resetLock.html)
+    - [开关锁示例](pages/appSdkV3/androidSdkDemoV3/androidExample/unlockLock.html)
+    - [密码操作示例](pages/appSdkV3/androidSdkDemoV3/androidExample/passcode.html)
+    - [操作记录示例](pages/appSdkV3/androidSdkDemoV3/androidExample/lockRecord.html)
+    - [获取锁时间示例](pages/appSdkV3/androidSdkDemoV3/androidExample/getLockTime.html)
+    - [校准锁时间示例](pages/appSdkV3/androidSdkDemoV3/androidExample/setLockTime.html)
+    - [网关接口示例](pages/appSdkV3/androidSdkDemoV3/androidExample/gateway.html)
+    - [添加遥控示例](pages/appSdkV3/androidSdkDemoV3/androidExample/addRemote.html)
+    - [添加门磁示例](pages/appSdkV3/androidSdkDemoV3/androidExample/addDoorSensor.html)
+- **iOS SDK Demo**
+  - [SDK Demo下载地址](pages/appSdkV3/iosSdkDemoV3/download.html)
+  - **使用说明及示例**
+    - [使用说明](pages/appSdkV3/iosSdkDemoV3/iosExample/instruction.html)
+    - [锁初始化示例](pages/appSdkV3/iosSdkDemoV3/iosExample/addLock.html)
+    - [重置锁示例](pages/appSdkV3/iosSdkDemoV3/iosExample/resetLock.html)
+    - [开关锁示例](pages/appSdkV3/iosSdkDemoV3/iosExample/unlockLock.html)
+    - [密码操作示例](pages/appSdkV3/iosSdkDemoV3/iosExample/passcode.html)
+    - [IC卡示例](pages/appSdkV3/iosSdkDemoV3/iosExample/card.html)
+    - [指纹示例](pages/appSdkV3/iosSdkDemoV3/iosExample/fingerprint.html)
+    - [网关接口示例](pages/appSdkV3/iosSdkDemoV3/iosExample/gateway.html)
+    - [无线键盘示例](pages/appSdkV3/iosSdkDemoV3/iosExample/wirelessKeypad.html)
+    - [添加门磁示例](pages/appSdkV3/iosSdkDemoV3/iosExample/addDoorSensor.html)
+    - [添加遥控示例](pages/appSdkV3/iosSdkDemoV3/iosExample/remoteControl.html)
+- [微信小程序插件](pages/userGuide/wechat.html)
+- [Flutter SDK DEMO](pages/userGuide/flutter.html)
+
+## 流程示例
+
+- [通通酒店对接流程](pages/example/TTHotelIntegration.html)
+- [常见问题](pages/example/FQA.html)
