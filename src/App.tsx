@@ -7,6 +7,7 @@ import { CompanyChatPage } from '@/pages/company/CompanyChatPage'
 import { CompanyComplaintDetailPage } from '@/pages/company/CompanyComplaintDetailPage'
 import { CompanyHomePage } from '@/pages/company/CompanyHomePage'
 import { CompanyInvoicesPage } from '@/pages/company/CompanyInvoicesPage'
+import { CompanyLocksPage } from '@/pages/company/CompanyLocksPage'
 import { CompanyProfilePage } from '@/pages/company/CompanyProfilePage'
 import { CompanySurveyPage } from '@/pages/company/CompanySurveyPage'
 import { CompanyWorkOrderDetailPage } from '@/pages/company/CompanyWorkOrderDetailPage'
@@ -29,6 +30,7 @@ import { RevenueValueAddedPage } from '@/pages/property/revenue/RevenueValueAdde
 import { RevenueVehiclePage } from '@/pages/property/revenue/RevenueVehiclePage'
 import { CompaniesPage } from '@/pages/property/companies/CompaniesPage'
 import { CompanyDetailPage } from '@/pages/property/companies/CompanyDetailPage'
+import { LocksPage } from '@/pages/property/locks/LocksPage'
 import { NoticesPage } from '@/pages/property/notices/NoticesPage'
 import { PermissionsPage } from '@/pages/property/PermissionsPage'
 import { MaintenancePage } from '@/pages/property/service/MaintenancePage'
@@ -70,7 +72,8 @@ function App() {
         <Route path="internal/inspections" element={<InspectionsPage />} />
         <Route path="internal/meters" element={<MetersPage />} />
         <Route path="internal/tasks" element={<TasksPage />} />
-        {/* 通知 / 企业档案 / 权限 */}
+        {/* 门锁 / 通知 / 企业档案 / 权限 */}
+        <Route path="locks" element={<LocksPage />} />
         <Route path="notices" element={<NoticesPage />} />
         <Route path="companies" element={<CompaniesPage />} />
         <Route path="companies/:companyId" element={<CompanyDetailPage />} />
@@ -95,6 +98,7 @@ function App() {
       >
         <Route index element={<Navigate to="home" replace />} />
         <Route path="home" element={<CompanyHomePage />} />
+        <Route path="locks" element={<CompanyLocksPage />} />
         <Route path="work-orders" element={<CompanyWorkOrdersPage />} />
         <Route path="work-orders/new" element={<NewWorkOrderPage />} />
         <Route path="work-orders/:id" element={<CompanyWorkOrderDetailPage />} />

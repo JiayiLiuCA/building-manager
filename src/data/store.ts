@@ -4,8 +4,11 @@ import {
   nextComplaintId,
   nextFollowUpId,
   nextInvoiceId,
+  nextLockAssignmentId,
   nextNoticeId,
+  nextPasscodeId,
   nextSurveyId,
+  nextUnlockRecordId,
   nextWorkOrderId,
 } from '../lib/id'
 import { deptMap, getWoStatusMeta, paymentMethodMap } from '../lib/statusMaps'
@@ -27,12 +30,17 @@ import type {
   FeeCategory,
   FollowUpRecord,
   Invoice,
+  LockAssignment,
+  LockPasscode,
   Notice,
   NoticeScope,
   NoticeType,
+  PasscodePurpose,
+  PasscodeType,
   PaymentHabit,
   Survey,
   SurveyResponse,
+  UnlockRecord,
   WorkOrder,
   WorkOrderCategory,
   WorkOrderEvent,
@@ -117,6 +125,36 @@ export interface AppStore extends AppData {
 
   // 任务清单
   completeTask: (id: string) => void
+
+  // 智能门锁:远程开锁 / 密码管理 / 分配与退租清退(设计见 docs/lock-module-design.md)
+  remoteUnlock: (lockId: string) => boolean
+  createRandomPasscode: (input: {
+    lockId: string
+    type: PasscodeType
+    name: string
+    startAt: string
+    endAt?: string
+    purpose: PasscodePurpose
+    companyId?: string
+  }) => { id: string; code: string } | undefined
+  createCustomPasscode: (input: {
+    lockId: string
+    name: string
+    code: string
+    type: 'period' | 'permanent'
+    startAt: string
+    endAt?: string
+    purpose: PasscodePurpose
+    companyId?: string
+  }) => string | undefined
+  setPasscodeDisabled: (id: string, disabled: boolean) => void
+  updatePasscode: (id: string, patch: { name?: string; code?: string; startAt?: string; endAt?: string }) => void
+  deletePasscode: (id: string) => void
+  assignLock: (lockId: string, companyId: string) => void
+  revokeLock: (lockId: string, reason: string) => void
+  /** 退租一键清退:回收企业全部锁 + 相关密码软删除;返回影响数量供 toast */
+  offboardCompanyLocks: (companyId: string) => { locks: number; passcodes: number }
+  setCsLockAssignment: (csUsername: string, lockIds: string[]) => void
 
   // 权限设置(仅主管)
   setCsAssignment: (csUsername: string, companyIds: string[]) => void
@@ -516,6 +554,169 @@ export const useAppStore = create<AppStore>()((set, get) => ({
       workTasks: s.workTasks.map((t) =>
         t.id === id ? { ...t, status: 'done' as const, completedAt: demoNow().slice(0, 10) } : t,
       ),
+    }))
+  },
+
+  // ===== 智能门锁 =====
+  remoteUnlock: (lockId) => {
+    const s = get()
+    const lock = s.doorLocks.find((l) => l.id === lockId)
+    const user = s.currentUser
+    if (!lock || !user || !lock.isOnline || !lock.remoteUnlockEnabled || lock.powerSavingMode) return false
+    const active = s.lockAssignments.find((a) => a.lockId === lockId && !a.revokedAt)
+    const record: UnlockRecord = {
+      id: nextUnlockRecordId(s.unlockRecords),
+      lockId,
+      at: demoNow(),
+      method: 'remote',
+      success: true,
+      actorLabel: user.displayName,
+      byUsername: user.username,
+      // 归属快照:锁的当前分配企业;大门锁无分配时归到操作者所属企业(企业开自家楼栋大门可见)
+      companyId: active?.companyId ?? user.companyId,
+    }
+    set({ unlockRecords: [...s.unlockRecords, record] })
+    return true
+  },
+
+  createRandomPasscode: ({ lockId, type, name, startAt, endAt, purpose, companyId }) => {
+    const s = get()
+    if (!s.currentUser) return undefined
+    // 随机密码由云端算法生成,不要求锁在线(对应 TTLock keyboardPwd/get 语义)
+    const code = String(Math.floor(100000 + Math.random() * 900000))
+    const id = nextPasscodeId(s.lockPasscodes)
+    const pc: LockPasscode = {
+      id,
+      lockId,
+      kind: 'random',
+      type,
+      name,
+      code,
+      startAt,
+      endAt: type === 'permanent' ? undefined : endAt,
+      purpose,
+      companyId,
+      createdAt: demoNow(),
+      createdBy: s.currentUser.displayName,
+      createdByRole: s.currentUser.role === 'company' ? 'company' : 'property',
+    }
+    set({ lockPasscodes: [...s.lockPasscodes, pc] })
+    return { id, code }
+  },
+
+  createCustomPasscode: ({ lockId, name, code, type, startAt, endAt, purpose, companyId }) => {
+    const s = get()
+    const lock = s.doorLocks.find((l) => l.id === lockId)
+    // 自定义密码需远程写入锁内,要求锁在线(对应 addType=2 语义)
+    if (!s.currentUser || !lock?.isOnline) return undefined
+    const id = nextPasscodeId(s.lockPasscodes)
+    const pc: LockPasscode = {
+      id,
+      lockId,
+      kind: 'custom',
+      type,
+      name,
+      code,
+      startAt,
+      endAt: type === 'permanent' ? undefined : endAt,
+      purpose,
+      companyId,
+      createdAt: demoNow(),
+      createdBy: s.currentUser.displayName,
+      createdByRole: s.currentUser.role === 'company' ? 'company' : 'property',
+    }
+    set({ lockPasscodes: [...s.lockPasscodes, pc] })
+    return id
+  },
+
+  setPasscodeDisabled: (id, disabled) => {
+    set((s) => ({
+      lockPasscodes: s.lockPasscodes.map((p) =>
+        p.id === id ? { ...p, disabledAt: disabled ? demoNow() : undefined } : p,
+      ),
+    }))
+  },
+
+  updatePasscode: (id, patch) => {
+    set((s) => ({
+      lockPasscodes: s.lockPasscodes.map((p) => (p.id === id ? { ...p, ...patch } : p)),
+    }))
+  },
+
+  deletePasscode: (id) => {
+    set((s) => ({
+      lockPasscodes: s.lockPasscodes.map((p) => (p.id === id ? { ...p, deletedAt: demoNow() } : p)),
+    }))
+  },
+
+  assignLock: (lockId, companyId) => {
+    const s = get()
+    const company = s.companies.find((c) => c.id === companyId)
+    if (!s.currentUser || s.currentUser.role === 'company' || !company) return
+    const now = demoNow()
+    const by = s.currentUser.displayName
+    // 已有分配先回收(换租语义),再建新分配
+    const lockAssignments = s.lockAssignments.map((a) =>
+      a.lockId === lockId && !a.revokedAt
+        ? { ...a, revokedAt: now, revokedBy: by, revokeReason: '换租调整,分配给新企业' }
+        : a,
+    )
+    const record: LockAssignment = {
+      id: nextLockAssignmentId(s.lockAssignments),
+      lockId,
+      companyId,
+      companyNameSnapshot: company.name,
+      assignedAt: now,
+      assignedBy: by,
+    }
+    set({ lockAssignments: [...lockAssignments, record] })
+  },
+
+  revokeLock: (lockId, reason) => {
+    const s = get()
+    if (!s.currentUser || s.currentUser.role === 'company') return
+    const now = demoNow()
+    const by = s.currentUser.displayName
+    const active = s.lockAssignments.find((a) => a.lockId === lockId && !a.revokedAt)
+    if (!active) return
+    set({
+      lockAssignments: s.lockAssignments.map((a) =>
+        a.id === active.id ? { ...a, revokedAt: now, revokedBy: by, revokeReason: reason } : a,
+      ),
+      // 该锁上该企业的密码一并删除(真实对接 = deleteType 2 远程批量删除)
+      lockPasscodes: s.lockPasscodes.map((p) =>
+        p.lockId === lockId && p.companyId === active.companyId && !p.deletedAt ? { ...p, deletedAt: now } : p,
+      ),
+    })
+  },
+
+  offboardCompanyLocks: (companyId) => {
+    const s = get()
+    if (!s.currentUser || s.currentUser.role === 'company') return { locks: 0, passcodes: 0 }
+    const now = demoNow()
+    const by = s.currentUser.displayName
+    const activeIds = new Set(
+      s.lockAssignments.filter((a) => a.companyId === companyId && !a.revokedAt).map((a) => a.id),
+    )
+    const passcodeHits = s.lockPasscodes.filter((p) => p.companyId === companyId && !p.deletedAt)
+    set({
+      lockAssignments: s.lockAssignments.map((a) =>
+        activeIds.has(a.id) ? { ...a, revokedAt: now, revokedBy: by, revokeReason: '企业退租清退' } : a,
+      ),
+      lockPasscodes: s.lockPasscodes.map((p) =>
+        p.companyId === companyId && !p.deletedAt ? { ...p, deletedAt: now } : p,
+      ),
+    })
+    return { locks: activeIds.size, passcodes: passcodeHits.length }
+  },
+
+  setCsLockAssignment: (csUsername, lockIds) => {
+    set((s) => ({
+      csLockAssignments: s.csLockAssignments.map((a) => {
+        if (a.csUsername === csUsername) return { ...a, lockIds: [...lockIds] }
+        // 同一把锁只归属一位客服:从其他客服名单中移除
+        return { ...a, lockIds: a.lockIds.filter((id) => !lockIds.includes(id)) }
+      }),
     }))
   },
 

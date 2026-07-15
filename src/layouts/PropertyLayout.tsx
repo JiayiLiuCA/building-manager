@@ -8,6 +8,7 @@ import {
   Gauge,
   LayoutDashboard,
   ListChecks,
+  Lock,
   LogOut,
   Megaphone,
   ShieldCheck,
@@ -100,6 +101,7 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     items: [
+      { to: '/property/locks', label: '门锁管理', icon: Lock, match: ['/property/locks'] },
       { to: '/property/notices', label: '通知管理', icon: Megaphone, match: ['/property/notices'] },
       { to: '/property/companies', label: '企业档案', icon: Building2, match: ['/property/companies'] },
       { to: '/property/permissions', label: '权限设置', icon: UserCog, match: ['/property/permissions'], supervisorOnly: true },

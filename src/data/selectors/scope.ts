@@ -31,9 +31,39 @@ function isPropertyRole(user: CurrentUser | null): boolean {
   return user?.role === 'supervisor' || user?.role === 'cs'
 }
 
+/**
+ * 门锁可见范围:主管 → 全部;客服 → 门锁管辖名单;
+ * 企业 → 当前分配给自己的锁 + 本楼栋大门锁(只可开门,管理动作由页面按 kind 守卫)。
+ * 空置单元锁与公共锁企业端永不可见。
+ */
+export function visibleLockIds(state: ScopedState): Set<string> {
+  const user = state.currentUser
+  if (!user) return new Set()
+  if (user.role === 'supervisor') return new Set(state.doorLocks.map((l) => l.id))
+  if (user.role === 'cs') {
+    const assignment = state.csLockAssignments.find((a) => a.csUsername === user.username)
+    return new Set(assignment?.lockIds ?? [])
+  }
+  const companyId = user.companyId
+  if (!companyId) return new Set()
+  const mine = new Set(
+    state.lockAssignments.filter((a) => a.companyId === companyId && !a.revokedAt).map((a) => a.lockId),
+  )
+  const company = state.companies.find((c) => c.id === companyId)
+  if (company) {
+    for (const lock of state.doorLocks) {
+      if (lock.kind === 'building_gate' && lock.buildingId === company.buildingId) mine.add(lock.id)
+    }
+  }
+  return mine
+}
+
 export function getScopedData(state: ScopedState): ScopedState {
   const ids = visibleCompanyIds(state)
   const propertyRole = isPropertyRole(state.currentUser)
+  const lockIds = visibleLockIds(state)
+  const isCompany = state.currentUser?.role === 'company'
+  const myCompanyId = state.currentUser?.companyId
   // 园区级账单(无 companyId,仅临停)只归主管:保证「客服的每一个财务数字 = 名下企业聚合」可加性
   const keepBill = (b: Bill) => (b.companyId ? ids.has(b.companyId) : state.currentUser?.role === 'supervisor')
   const keepWo = (w: WorkOrder) => (w.kind === 'company' ? !!w.companyId && ids.has(w.companyId) : propertyRole)
@@ -48,6 +78,18 @@ export function getScopedData(state: ScopedState): ScopedState {
     invoices: state.invoices.filter((i) => ids.has(i.companyId)),
     followUpRecords: state.followUpRecords.filter((r) => ids.has(r.companyId)),
     surveyResponses: state.surveyResponses.filter((r) => ids.has(r.companyId)),
+    // 门锁四数组:物业按锁范围;企业按归属(密码/记录看 companyId,记录取的是落库时的快照,
+    // 保证换租后新企业看不到上家的密码与通行历史)
+    doorLocks: state.doorLocks.filter((l) => lockIds.has(l.id)),
+    lockAssignments: state.lockAssignments.filter((a) =>
+      isCompany ? a.companyId === myCompanyId : lockIds.has(a.lockId),
+    ),
+    lockPasscodes: state.lockPasscodes.filter((p) =>
+      isCompany ? p.companyId === myCompanyId : lockIds.has(p.lockId),
+    ),
+    unlockRecords: state.unlockRecords.filter((r) =>
+      isCompany ? r.companyId === myCompanyId : lockIds.has(r.lockId),
+    ),
   }
 }
 

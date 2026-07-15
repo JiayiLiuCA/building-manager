@@ -316,6 +316,107 @@ export interface WorkTask {
   completedAt?: string
 }
 
+// ===== 智能门锁(TTLock WiFi 锁,单主账号 + 应用层权限;设计详见 docs/lock-module-design.md)=====
+/** 锁是园区资产,归属空间;与企业的关系由 lockAssignments 派生,不在锁上冗余存 companyId */
+export type LockKind = 'unit' | 'building_gate' | 'public'
+
+export interface DoorLock {
+  id: string // 'LK-001'
+  name: string // 'A1 栋 301 门锁'
+  kind: LockKind
+  zoneId: string
+  buildingId: string
+  /** 大门/公共锁可空 */
+  floor?: number
+  doorLabel: string // '301' / '一层大堂' / '强电井'
+  sn: string // 'TTL-8F2A31'(演示假 SN)
+  model: string
+  installedAt: string // ISO
+  // —— 模拟 TTLock 云端实时状态 ——
+  isOnline: boolean
+  /** 0-100;≤20 视为低电量 */
+  battery: number
+  /** WiFi 信号:3 强 / 2 中 / 1 差 / 0 未知 */
+  rssiGrade: 0 | 1 | 2 | 3
+  remoteUnlockEnabled: boolean
+  /** 省电模式开启时云端无法主动下发指令(对应真实错误码 -3035) */
+  powerSavingMode: boolean
+}
+
+/** 锁分配记录 —— 退租重分配的事实源;revokedAt 为空 = 当前生效 */
+export interface LockAssignment {
+  id: string // 'LA-001'
+  lockId: string
+  companyId: string
+  /** 企业名快照:企业迁出后分配历史仍能显示上一家名称 */
+  companyNameSnapshot: string
+  assignedAt: string
+  assignedBy: string // 操作人显示名
+  revokedAt?: string
+  revokedBy?: string
+  revokeReason?: string // '企业退租清退' / '单锁回收调整'
+}
+
+// ===== 门锁密码(对应 TTLock keyboardPwd 随机/自定义两套方案)=====
+export type PasscodeKind = 'random' | 'custom'
+/** 随机密码:单次/限期/永久/循环;自定义密码:限期/永久 */
+export type PasscodeType = 'once' | 'period' | 'permanent' | 'cycle_daily' | 'cycle_weekday' | 'cycle_weekend'
+export type PasscodePurpose = 'staff' | 'visitor' | 'cleaning' | 'other'
+
+export interface LockPasscode {
+  id: string // 'PC-0001'
+  lockId: string
+  kind: PasscodeKind
+  type: PasscodeType
+  /** 命名规范「企业-用途-人名」,通行记录靠它辨人 */
+  name: string
+  code: string // 4-9 位数字(演示明文)
+  startAt: string
+  /** permanent 无;循环类型 = 每日时段模板的起止 */
+  endAt?: string
+  purpose: PasscodePurpose
+  /** 归属企业;物业为大门/公共锁发的可空 */
+  companyId?: string
+  createdAt: string
+  createdBy: string // 显示名
+  createdByRole: 'property' | 'company'
+  /** 软禁用(真实对接 = 远程改有效期挂起,可恢复) */
+  disabledAt?: string
+  /** 软删除(真实对接 = deleteType 2 远程删除;保留审计) */
+  deletedAt?: string
+}
+
+/**
+ * 密码状态派生(lockSelectors):
+ * deletedAt→deleted(默认过滤) > disabledAt→disabled > now<startAt→pending
+ * > endAt<now→expired > 其余 active
+ */
+export type PasscodeStatus = 'active' | 'pending' | 'disabled' | 'expired' | 'deleted'
+
+// ===== 通行记录(模拟 TTLock 回调推送的开锁记录)=====
+export type UnlockMethod = 'remote' | 'passcode' | 'app_ble' | 'ic_card' | 'fingerprint'
+
+export interface UnlockRecord {
+  id: string // 'UR-00001'
+  lockId: string
+  at: string
+  method: UnlockMethod
+  success: boolean
+  /** 操作者描述:远程=账号显示名;密码=密码名称;蓝牙=钥匙持有人 */
+  actorLabel: string
+  /** 应用层审计:触发远程开锁的系统账号(TTLock 侧操作人恒为主账号,记账靠自己) */
+  byUsername?: string
+  /** 记录发生时锁的分配企业(快照;换租后旧记录不随锁转移给新企业) */
+  companyId?: string
+  passcodeId?: string
+}
+
+/** 客服门锁管辖名单 —— 权限设置页编辑;一把锁只归一位客服(互斥同企业名单) */
+export interface CsLockAssignment {
+  csUsername: string
+  lockIds: string[]
+}
+
 // ===== 通知管理 =====
 export type NoticeType = 'public_repair' | 'water_outage' | 'power_outage' | 'general'
 
@@ -430,6 +531,11 @@ export interface AppData {
   staff: Staff[]
   accounts: Account[]
   csAssignments: CsAssignment[]
+  doorLocks: DoorLock[]
+  lockAssignments: LockAssignment[]
+  lockPasscodes: LockPasscode[]
+  unlockRecords: UnlockRecord[]
+  csLockAssignments: CsLockAssignment[]
   bills: Bill[]
   waivers: Waiver[]
   revenueTargets: RevenueTarget[]

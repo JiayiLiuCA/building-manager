@@ -19,6 +19,7 @@ import {
   genTargets,
   genWorkTasks,
 } from './generators'
+import { genLockData } from './locks'
 import {
   buildStoryComplaints,
   buildStoryFollowUps,
@@ -69,6 +70,9 @@ export function buildSeedData(): AppData {
   const notices = buildStoryNotices(storyWos.plazaRepair.id)
   const followUpRecords = buildStoryFollowUps()
 
+  // 7. 智能门锁:锁资产/分配(含迁出企业历史)/密码/通行记录/客服管辖
+  const lockData = genLockData(companies, rng)
+
   return {
     park: PARK,
     zones: ZONES,
@@ -92,5 +96,6 @@ export function buildSeedData(): AppData {
     surveys,
     surveyResponses,
     followUpRecords,
+    ...lockData,
   }
 }

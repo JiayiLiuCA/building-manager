@@ -6,6 +6,7 @@ import { deriveComplaintStatus } from '../src/data/selectors/complaintSelectors'
 import { getDashboardKpis } from '../src/data/selectors/dashboardSelectors'
 import { buildDailyReport } from '../src/data/selectors/dailyReportSelectors'
 import { getActiveFollowUpForCompany, getFollowUpSuggestion } from '../src/data/selectors/followUpSelectors'
+import { derivePasscodeStatus, getCompanyLocks } from '../src/data/selectors/lockSelectors'
 import { deriveNoticeStatus, getActiveNoticesForCompany } from '../src/data/selectors/noticeSelectors'
 import { getRatingDist } from '../src/data/selectors/satisfactionSelectors'
 import { getNoticeScopeOptions, getScopedData, getScopedInternal, visibleCompanyIds } from '../src/data/selectors/scope'
@@ -160,6 +161,49 @@ async function main() {
   check('今日缴费(③)计入日报今日收款', dr.payments.bills.some((b) => b.companyId === C3))
   check('今日关闭工单 ≥ 1(链路 1 的签字关单)', dr.workOrders.closed >= 1)
   check('今日动态含链路产生的条目', dr.feed.some((f) => f.channel === 'payment') && dr.feed.some((f) => f.channel === 'workOrder'))
+
+  // ===== 链路 11:智能门锁(远程开锁 → 密码全生命周期 → 退租清退与换租)=====
+  console.log('\n— 链路 11:智能门锁 —')
+  // 11.1 企业①一键开门 → 通行记录带企业快照与操作账号
+  s().loginAs('company1')
+  const c1Locks = getCompanyLocks(getScopedData(s()), STORY_COMPANY_IDS.one)
+  const recBefore = s().unlockRecords.length
+  check('企业①远程开锁成功(锁在线)', s().remoteUnlock(c1Locks[0].id))
+  const newRec = s().unlockRecords[s().unlockRecords.length - 1]
+  check('通行记录 +1 且快照正确(remote/company1/C-03)', s().unlockRecords.length === recBefore + 1 && newRec.method === 'remote' && newRec.byUsername === 'company1' && newRec.companyId === STORY_COMPANY_IDS.one)
+  check('企业①视角能看到这条记录', getScopedData(s()).unlockRecords.some((r) => r.id === newRec.id))
+  // 11.2 离线锁拒绝远程开锁与自定义密码
+  s().loginAs('admin')
+  const offlineLock = s().doorLocks.find((l) => !l.isOnline)!
+  check('离线锁远程开锁被拒', !s().remoteUnlock(offlineLock.id))
+  check('离线锁自定义密码被拒(addType=2 需在线)', s().createCustomPasscode({ lockId: offlineLock.id, name: 'x', code: '1234', type: 'permanent', startAt: '2026-06-06T00:00:00', purpose: 'staff' }) === undefined)
+  // 11.3 密码全生命周期:生成 → 禁用 → 恢复 → 修改 → 删除
+  s().loginAs('company1')
+  const created = s().createRandomPasscode({ lockId: c1Locks[0].id, type: 'period', name: '云脉智能-访客-链路测试', startAt: '2026-06-06T09:00:00', endAt: '2026-06-06T18:00:00', purpose: 'visitor', companyId: STORY_COMPANY_IDS.one })!
+  const pcOf = () => s().lockPasscodes.find((p) => p.id === created.id)!
+  check('随机密码生成(6 位)', /^\d{6}$/.test(created.code) && derivePasscodeStatus(pcOf()) === 'active')
+  s().setPasscodeDisabled(created.id, true)
+  check('禁用 → disabled(软禁用可恢复)', derivePasscodeStatus(pcOf()) === 'disabled')
+  s().setPasscodeDisabled(created.id, false)
+  s().updatePasscode(created.id, { code: '888999' })
+  check('恢复 + 改码生效', derivePasscodeStatus(pcOf()) === 'active' && pcOf().code === '888999')
+  s().deletePasscode(created.id)
+  check('删除 → deleted(留档不移除)', derivePasscodeStatus(pcOf()) === 'deleted')
+  // 11.4 退租清退 → 空置 → 换租给新企业;旧记录不随锁转移
+  s().loginAs('admin')
+  const c3LockIds = getCompanyLocks(s(), C3).map((l) => l.id)
+  const c3RecordCount = s().unlockRecords.filter((r) => r.companyId === C3).length
+  const result = s().offboardCompanyLocks(C3)
+  check('③退租清退:回收锁 + 删除密码', result.locks === c3LockIds.length && result.locks > 0 && result.passcodes >= 2)
+  check('清退后③名下无锁,密码全部 deleted', getCompanyLocks(s(), C3).length === 0 && s().lockPasscodes.filter((p) => p.companyId === C3).every((p) => !!p.deletedAt))
+  s().loginAs('company3')
+  check('企业③端门锁页仅剩楼栋大门', getScopedData(s()).doorLocks.every((l) => l.kind === 'building_gate'))
+  s().loginAs('admin')
+  s().assignLock(c3LockIds[0], C2)
+  check('空置锁换租给②:分配历史含 ③(已回收)与 ②(生效)', (() => { const h = s().lockAssignments.filter((a) => a.lockId === c3LockIds[0]); return h.some((a) => a.companyId === C3 && a.revokedAt) && h.some((a) => a.companyId === C2 && !a.revokedAt) })())
+  s().loginAs('company2')
+  const c2View = getScopedData(s())
+  check('②接手后可见该锁,但看不到③的历史通行(快照隔离)', c2View.doorLocks.some((l) => l.id === c3LockIds[0]) && !c2View.unlockRecords.some((r) => r.companyId === C3) && c3RecordCount > 0)
 
   console.log(failures === 0 ? '\n全部链路通过 ✅' : `\n${failures} 项断言失败 ❌`)
   process.exit(failures === 0 ? 0 : 1)

@@ -7,11 +7,17 @@ import type {
   FeeCategory,
   FollowUpSuggestion,
   InspectionTemplateKey,
+  LockKind,
   MaintenanceCategory,
   NoticeStatus,
   NoticeType,
+  PasscodeKind,
+  PasscodePurpose,
+  PasscodeStatus,
+  PasscodeType,
   PaymentMethod,
   TaskLevel,
+  UnlockMethod,
   UtilitySub,
   ValueAddedType,
   VehicleSub,
@@ -224,6 +230,61 @@ export const noticeStatusMap: Record<NoticeStatus, StatusMeta> = {
 export const surveyStatusMap: Record<'active' | 'closed', StatusMeta> = {
   active: { label: '进行中', className: blue },
   closed: { label: '已结束', className: zinc },
+}
+
+// ===== 智能门锁 =====
+export const lockKindMap: Record<LockKind, StatusMeta> = {
+  unit: { label: '单元门', className: blue },
+  building_gate: { label: '楼栋大门', className: indigo },
+  public: { label: '公共区域', className: violet },
+}
+
+export const lockOnlineMap: Record<'online' | 'offline', StatusMeta> = {
+  online: { label: '在线', className: emerald },
+  offline: { label: '离线', className: red },
+}
+
+/** 单元锁分配状态(大门/公共锁不适用) */
+export const lockAssignedMap: Record<'assigned' | 'vacant', StatusMeta> = {
+  assigned: { label: '使用中', className: emerald },
+  vacant: { label: '空置', className: zinc },
+}
+
+export const passcodeKindMap: Record<PasscodeKind, StatusMeta> = {
+  random: { label: '随机密码', className: sky },
+  custom: { label: '自定义密码', className: blue },
+}
+
+export const passcodeTypeMap: Record<PasscodeType, string> = {
+  once: '单次',
+  period: '限期',
+  permanent: '永久',
+  cycle_daily: '每日循环',
+  cycle_weekday: '工作日循环',
+  cycle_weekend: '周末循环',
+}
+
+export const passcodePurposeMap: Record<PasscodePurpose, string> = {
+  staff: '员工',
+  visitor: '访客',
+  cleaning: '保洁',
+  other: '其他',
+}
+
+export const passcodeStatusMap: Record<PasscodeStatus, StatusMeta> = {
+  active: { label: '生效中', className: emerald },
+  pending: { label: '未生效', className: blue },
+  disabled: { label: '已禁用', className: amber },
+  expired: { label: '已过期', className: zinc },
+  deleted: { label: '已删除', className: red },
+}
+
+export const unlockMethodMap: Record<UnlockMethod, StatusMeta> = {
+  remote: { label: '远程开锁', className: indigo },
+  passcode: { label: '密码开锁', className: blue },
+  app_ble: { label: '蓝牙开锁', className: sky },
+  ic_card: { label: 'IC 卡', className: violet },
+  fingerprint: { label: '指纹', className: emerald },
 }
 
 // ===== 部门 =====

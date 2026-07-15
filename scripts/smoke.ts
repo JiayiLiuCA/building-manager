@@ -145,6 +145,33 @@ async function main() {
   await expectText(page, '年度', '任务四级')
   await shot(page, '25-tasks-admin')
 
+  // ===== 门锁管理三 Tab(S12)=====
+  await nav(page, '门锁管理')
+  await expectText(page, '设备总数', '门锁 KPI 行')
+  await expectText(page, '低电量(≤20%)', '低电量 KPI')
+  await expectText(page, '远程开锁', '设备行远程开锁按钮')
+  await shot(page, '25a-locks-device')
+  // 锁详情弹窗:搜索换租故事锁 → 点锁名打开(避开企业链接列)→ 分配历史含迁出企业
+  await page.getByPlaceholder('搜索锁名 / SN / 企业').fill('联创电子')
+  await page.waitForTimeout(500)
+  await page.getByText('B2 栋 101 门锁').first().click()
+  await page.waitForTimeout(600)
+  await expectText(page, '分配历史', '锁详情分配历史')
+  await expectText(page, /星辰视讯/, '迁出企业留档(换租链)')
+  await shot(page, '25b-lock-detail-history')
+  await page.keyboard.press('Escape')
+  await page.waitForTimeout(300)
+  await page.getByRole('tab', { name: /密码管理/ }).click()
+  await page.waitForTimeout(500)
+  await expectText(page, '云脉智能-访客-张先生', '预置访客密码(今天生效)')
+  await expectText(page, '已禁用', '密码状态徽章')
+  await shot(page, '25c-locks-passcodes')
+  await page.getByRole('tab', { name: /通行记录/ }).click()
+  await page.waitForTimeout(500)
+  await expectText(page, '密码开锁', '通行方式徽章')
+  await expectText(page, '密码输入错误', '失败记录(③异常故事)')
+  await shot(page, '25d-locks-records')
+
   // ===== 通知管理 =====
   await nav(page, '通知管理')
   await expectText(page, '停电检修通知:B 区高压配电设备年度检修', '预置停电通知')
@@ -195,7 +222,22 @@ async function main() {
   // ===== 企业②:通知/账单/发票/调研/AI =====
   await switchAccount(page, '企业② 精工精密制造', '/company/home')
   await expectText(page, '停电检修通知', '企业②首页可见 B 区停电通知')
+  await expectText(page, '快捷开门', '首页快捷开门卡(S12)')
   await shot(page, '34-company2-home')
+
+  // 门锁页:一键开门 + 密码自助管理
+  await nav(page, '门锁')
+  await expectText(page, '我的门锁', '企业门锁页')
+  await shot(page, '34a-company2-locks')
+  await page.getByRole('button', { name: /一键开门/ }).first().click()
+  await page.waitForTimeout(1400)
+  await expectText(page, '已开门', '一键开门成功动画/提示')
+  await shot(page, '34b-company2-unlocked')
+  await page.getByRole('tab', { name: /密码管理/ }).click()
+  await page.waitForTimeout(500)
+  await expectText(page, '生成访客密码', '访客密码快捷入口')
+  await expectText(page, '精工精密-前台-通用', '预置企业密码')
+  await shot(page, '34c-company2-passcodes')
 
   await nav(page, '账单缴费')
   await expectText(page, '当前应缴', '企业②待缴账单')

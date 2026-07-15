@@ -1,10 +1,11 @@
 import { useSearchParams } from 'react-router'
 import { useScopedData } from '@/hooks/useScopedData'
+import { LockDetailDialog } from '@/pages/property/locks/LockDetailDialog'
 import { ComplaintDetailDialog } from './ComplaintDetailDialog'
 import { WorkOrderDetailDialog } from './WorkOrderDetailDialog'
 
 /**
- * 全局详情宿主:任何物业端页面通过 ?detail=WO-xxx / CP-xxx 原地打开详情弹窗,
+ * 全局详情宿主:任何物业端页面通过 ?detail=WO-xxx / CP-xxx / LK-xxx 原地打开详情弹窗,
  * 关闭后停留原页(不丢筛选与分页)。
  */
 export function DetailDialogHost() {
@@ -24,6 +25,9 @@ export function DetailDialogHost() {
   }
   if (detail.startsWith('CP-')) {
     return <ComplaintDetailDialog complaint={scoped.complaints.find((c) => c.id === detail)} onClose={close} />
+  }
+  if (detail.startsWith('LK-')) {
+    return <LockDetailDialog lock={scoped.doorLocks.find((l) => l.id === detail)} onClose={close} />
   }
   return null
 }

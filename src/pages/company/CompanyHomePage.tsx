@@ -16,6 +16,7 @@ import { useScopedData } from '@/hooks/useScopedData'
 import { CURRENT_MONTH } from '@/lib/date'
 import { formatCurrency, formatDateTime, formatMonth } from '@/lib/format'
 import { billStatusMap, noticeStatusMap, noticeTypeMap, paymentMethodMap } from '@/lib/statusMaps'
+import { QuickUnlockCard } from './QuickUnlockCard'
 
 const QUICK_LINKS = [
   { to: '/company/work-orders', label: '报事报修', icon: Wrench, desc: '4 小时响应承诺' },
@@ -77,6 +78,9 @@ export function CompanyHomePage() {
           ))}
         </div>
       )}
+
+      {/* ===== 快捷开门(高频动作置顶) ===== */}
+      <QuickUnlockCard />
 
       {/* ===== 本月账单概览 ===== */}
       <Card className="py-0">

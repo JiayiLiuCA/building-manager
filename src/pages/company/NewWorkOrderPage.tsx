@@ -1,6 +1,6 @@
 import { ArrowLeft, ImagePlus } from 'lucide-react'
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router'
+import { Link, useNavigate, useSearchParams } from 'react-router'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -20,12 +20,17 @@ const COMPANY_CATEGORIES = (Object.keys(workOrderCategoryMap) as WorkOrderCatego
 
 export function NewWorkOrderPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const scoped = useScopedData()
   const createWorkOrder = useAppStore((s) => s.createWorkOrder)
   const company = scoped.companies.find((c) => c.id === scoped.currentUser?.companyId)
 
-  const [category, setCategory] = useState<WorkOrderCategory>('hvac')
-  const [description, setDescription] = useState('')
+  // 支持 ?category= 预填(门锁低电量「一键报修」等入口)
+  const presetCategory = searchParams.get('category') as WorkOrderCategory | null
+  const [category, setCategory] = useState<WorkOrderCategory>(
+    presetCategory && (COMPANY_CATEGORIES as WorkOrderCategory[]).includes(presetCategory) ? presetCategory : 'hvac',
+  )
+  const [description, setDescription] = useState(searchParams.get('desc') ?? '')
 
   const submit = () => {
     const id = createWorkOrder({ category, description: description.trim() })

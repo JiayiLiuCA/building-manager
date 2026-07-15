@@ -9,9 +9,10 @@ import { getFollowUpRows, getFollowUpSuggestion } from '../src/data/selectors/fo
 import { getActiveNoticesForCompany } from '../src/data/selectors/noticeSelectors'
 import { getPeriodAchievement } from '../src/data/selectors/revenueSelectors'
 import { getCurrentSatisfaction } from '../src/data/selectors/satisfactionSelectors'
-import { getScopedData, getScopedInternal, visibleCompanyIds, type ScopedState } from '../src/data/selectors/scope'
+import { derivePasscodeStatus } from '../src/data/selectors/lockSelectors'
+import { getScopedData, getScopedInternal, visibleCompanyIds, visibleLockIds, type ScopedState } from '../src/data/selectors/scope'
 import type { Bill, CurrentUser } from '../src/data/types'
-import { CURRENT_MONTH, DEMO_TODAY, diffHours, lastMonths } from '../src/lib/date'
+import { CURRENT_MONTH, dateDaysAgo, DEMO_TODAY, diffHours, lastMonths } from '../src/lib/date'
 
 const data = buildSeedData()
 let failures = 0
@@ -328,6 +329,28 @@ check('visibleCompanyIds:主管 30 / 王琳 21 / 刘洋 9 / 企业 1', visibleCo
 
 // 停电通知定向:company2 相关,company1/3 不相关
 check('B 区停电通知:company2 可见 / company1、3 不可见', getActiveNoticesForCompany(data, 'C-13').some((n) => n.id === 'NT-001') && !getActiveNoticesForCompany(data, 'C-03').some((n) => n.id === 'NT-001') && !getActiveNoticesForCompany(data, 'C-25').some((n) => n.id === 'NT-001'))
+
+// ===== 智能门锁(S12)=====
+const locks = data.doorLocks
+check('门锁 63 把(单元 43 / 大门 14 / 公共 6)', locks.length === 63 && locks.filter((l) => l.kind === 'unit').length === 43 && locks.filter((l) => l.kind === 'building_gate').length === 14 && locks.filter((l) => l.kind === 'public').length === 6)
+check('锁 id / 名称唯一', new Set(locks.map((l) => l.id)).size === locks.length && new Set(locks.map((l) => l.name)).size === locks.length)
+check('锁状态摆位:离线 3 / 低电量 3 / 省电 1', locks.filter((l) => !l.isOnline).length === 3 && locks.filter((l) => l.battery <= 20).length === 3 && locks.filter((l) => l.powerSavingMode).length === 1)
+check('分配记录:43 生效 + 2 迁出留档(星辰视讯 → 2026-01 换租)', data.lockAssignments.filter((a) => !a.revokedAt).length === 43 && data.lockAssignments.filter((a) => a.revokedAt && a.companyNameSnapshot.includes('星辰视讯') && a.revokeReason === '企业退租清退').length === 2)
+const reassigned = data.lockAssignments.filter((a) => !a.revokedAt && ['C-14', 'C-15'].includes(a.companyId))
+check('换租故事:联创/卓立现分配自 2026-01', reassigned.length === 2 && reassigned.every((a) => a.assignedAt.startsWith('2026-01')))
+const pcStatus = (st: string) => data.lockPasscodes.filter((p) => derivePasscodeStatus(p, `${DEMO_TODAY}T10:00:00`) === st).length
+check('密码 20 个:生效 18 / 禁用 1 / 过期 1', data.lockPasscodes.length === 20 && pcStatus('active') === 18 && pcStatus('disabled') === 1 && pcStatus('expired') === 1)
+check('①访客密码今天生效中(演示主角)', data.lockPasscodes.some((p) => p.name === '云脉智能-访客-张先生' && derivePasscodeStatus(p, `${DEMO_TODAY}T10:00:00`) === 'active'))
+const c25Locks = new Set(data.lockAssignments.filter((a) => a.companyId === 'C-25' && !a.revokedAt).map((a) => a.lockId))
+check('③首锁低电量(一键报修素材)', locks.some((l) => c25Locks.has(l.id) && l.battery <= 20 && l.isOnline))
+check('③昨晚连续 3 次密码失败(异常故事)', data.unlockRecords.filter((r) => c25Locks.has(r.lockId) && !r.success && r.at.startsWith(dateDaysAgo(1)) && r.at.slice(11, 13) === '22').length === 3)
+check('通行记录规模合理且今日有数', data.unlockRecords.length > 1200 && data.unlockRecords.filter((r) => r.at.startsWith(DEMO_TODAY)).length >= 8)
+// 门锁权限隔离
+const lockIdsOf = (u: Parameters<typeof visibleLockIds>[0]['currentUser']) => visibleLockIds({ ...data, currentUser: u })
+check('visibleLockIds:主管 63 / 王琳 45 / 刘洋 18', lockIdsOf({ role: 'supervisor', username: 'admin', displayName: 'x' }).size === 63 && lockIdsOf({ role: 'cs', username: 'cs_wang', displayName: 'x' }).size === 45 && lockIdsOf({ role: 'cs', username: 'cs_liu', displayName: 'x' }).size === 18)
+check('企业①锁范围 = 2 单元锁 + A3 大门', (() => { const ids = lockIdsOf({ role: 'company', username: 'company1', displayName: 'x', companyId: 'C-03' }); const mine = locks.filter((l) => ids.has(l.id)); return ids.size === 3 && mine.filter((l) => l.kind === 'unit').length === 2 && mine.filter((l) => l.kind === 'building_gate' && l.buildingId === 'A3').length === 1 })())
+check('企业①视角:密码/通行记录仅本企业(快照隔离)', c1View.lockPasscodes.every((p) => p.companyId === 'C-03') && c1View.unlockRecords.every((r) => r.companyId === 'C-03'))
+check('刘洋视角:门锁数据仅 C 区', liuView.doorLocks.every((l) => l.zoneId === 'C') && liuView.unlockRecords.every((r) => liuView.doorLocks.some((l) => l.id === r.lockId)))
 
 console.log(`\n当月应收 ${sum(juneAll)} 元,实收 ${sumPaid(juneAll)} 元,收缴率 ${pct(juneRate)};三视角收缴率 ${pct(kAdmin.collectionRate)} / ${pct(kWang.collectionRate)} / ${pct(kLiu.collectionRate)}`)
 console.log(failures === 0 ? '\n全部断言通过 ✅' : `\n${failures} 项断言失败 ❌`)

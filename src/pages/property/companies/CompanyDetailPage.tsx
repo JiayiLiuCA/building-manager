@@ -32,12 +32,14 @@ import {
 } from '@/data/selectors/billingSelectors'
 import { complaintCreatedAt, deriveComplaintStatus } from '@/data/selectors/complaintSelectors'
 import { getActiveFollowUpForCompany, getFollowUpReasons, getFollowUpSuggestion } from '@/data/selectors/followUpSelectors'
+import { getCompanyLocks } from '@/data/selectors/lockSelectors'
 import { deriveWorkOrderStatus, getCompanyWorkOrders, reportedAt } from '@/data/selectors/workOrderSelectors'
 import { getCompanyComplaints } from '@/data/selectors/complaintSelectors'
 import { useAppStore } from '@/data/store'
 import { useScopedData } from '@/hooks/useScopedData'
 import type { PaymentMethod } from '@/data/types'
 import { formatDateTime, formatMonth } from '@/lib/format'
+import { CompanyLocksTab } from './CompanyLocksTab'
 import {
   billStatusMap,
   billSubTypeMap,
@@ -79,6 +81,7 @@ function DetailBody({ companyId }: { companyId: string }) {
     () => scoped.followUpRecords.filter((r) => r.companyId === companyId).sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
     [scoped.followUpRecords, companyId],
   )
+  const companyLocks = useMemo(() => getCompanyLocks(scoped, companyId), [scoped, companyId])
   const activeRecord = getActiveFollowUpForCompany(scoped, companyId)
 
   const tab = searchParams.get('tab') ?? 'bills'
@@ -224,8 +227,13 @@ function DetailBody({ companyId }: { companyId: string }) {
           <TabsTrigger value="workOrders">工单 ({workOrders.length})</TabsTrigger>
           <TabsTrigger value="complaints">投诉 ({complaints.length})</TabsTrigger>
           <TabsTrigger value="invoices">发票 ({invoices.length})</TabsTrigger>
+          <TabsTrigger value="locks">门锁 ({companyLocks.length})</TabsTrigger>
           <TabsTrigger value="followups">跟进记录 ({followUps.length})</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="locks">
+          <CompanyLocksTab companyId={companyId} />
+        </TabsContent>
 
         <TabsContent value="bills" className="space-y-4">
           <Card className="py-0">

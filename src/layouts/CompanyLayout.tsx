@@ -5,6 +5,7 @@ import {
   ClipboardList,
   CreditCard,
   Home,
+  KeyRound,
   LogOut,
   ReceiptText,
   UserRound,
@@ -28,6 +29,7 @@ import { FollowUpNoticeDialog } from '@/pages/company/FollowUpNoticeDialog'
 
 const TABS = [
   { to: '/company/home', label: '首页', icon: Home, match: ['/company/home'] },
+  { to: '/company/locks', label: '门锁', icon: KeyRound, match: ['/company/locks'] },
   { to: '/company/work-orders', label: '报事报修', icon: Wrench, match: ['/company/work-orders', '/company/complaints'] },
   { to: '/company/bills', label: '账单缴费', icon: CreditCard, match: ['/company/bills'] },
   { to: '/company/invoices', label: '发票查询', icon: ReceiptText, match: ['/company/invoices'] },
